@@ -1,0 +1,9 @@
+id	label	x	y	cluster	weight<Occurrences>	weight<Total link strength>	score<Avg. pub. year>
+1	geopolymer concrete	-0.3421	0.2154	1	45	120	2023.40
+2	fly ash	-0.2104	0.1542	1	62	180	2022.80
+3	alkali activation	-0.1845	0.3012	1	38	95	2023.10
+4	reinforced concrete beams	0.4120	-0.1250	2	50	140	2021.90
+5	flexural capacity	0.3541	-0.0842	2	42	115	2022.50
+6	ductility	0.2980	-0.2100	2	35	90	2022.20
+7	sulfate resistance	-0.0520	-0.3420	3	28	75	2024.10
+8	durability	0.0120	-0.2840	3	40	105	2023.00

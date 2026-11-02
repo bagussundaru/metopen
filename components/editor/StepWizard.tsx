@@ -11,6 +11,7 @@ import { Step3ResearchQuestion } from "@/components/editor/Step3ResearchQuestion
 import { Step4MethodData } from "@/components/editor/Step4MethodData";
 import { Step5Feasibility } from "@/components/editor/Step5Feasibility";
 import { LiveValidationPanel } from "@/components/editor/LiveValidationPanel";
+import { LiteratureMapTab } from "@/components/editor/LiteratureMapTab";
 import { ExportDialog } from "@/components/export/ExportDialog";
 import {
   FileText,
@@ -232,16 +233,7 @@ export function StepWizard({ canvas }: StepWizardProps) {
           </div>
         </>
       ) : (
-        /* Literature Map Placeholder (Fase 5) */
-        <div className="p-12 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-          <Network className="w-12 h-12 text-blue-500 mx-auto" />
-          <h3 className="font-bold text-base text-slate-900 dark:text-white">
-            Modul Peta Literatur VOSviewer & Scopus CSV
-          </h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Visualisasi jaringan kata kunci (Network & Overlay View) dan detektor kandidat research gap interaktif akan diaktifkan pada Fase 5.
-          </p>
-        </div>
+        <LiteratureMapTab canvas={canvas} onChange={updateActiveCanvas} />
       )}
 
       <ExportDialog
