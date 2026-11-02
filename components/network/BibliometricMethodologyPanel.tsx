@@ -21,6 +21,11 @@ import {
   Download,
   CheckCircle2,
   HelpCircle,
+  TrendingUp,
+  Award,
+  Users,
+  Lightbulb,
+  GitFork,
 } from "lucide-react";
 
 interface BibliometricMethodologyPanelProps {
@@ -46,7 +51,7 @@ export function BibliometricMethodologyPanel({
   maxYear,
   onChange,
 }: BibliometricMethodologyPanelProps) {
-  const [activeTab, setActiveTab] = useState<"protocol" | "bab3" | "clusters" | "units">("protocol");
+  const [activeTab, setActiveTab] = useState<"protocol" | "performance" | "mapping" | "bab3" | "sensemaking">("protocol");
   const [copiedBab3, setCopiedBab3] = useState(false);
   const [appliedToStep4, setAppliedToStep4] = useState(false);
 
@@ -58,14 +63,75 @@ export function BibliometricMethodologyPanel({
       if (!map.has(c)) map.set(c, []);
       map.get(c)!.push(n);
     });
-    // Sort clusters by number of keywords descending
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
   }, [nodes]);
 
-  // Top core keywords by occurrences
+  // Top core keywords by occurrences & total link strength (TLS)
   const topKeywords = useMemo(() => {
-    return [...nodes].sort((a, b) => b.occurrences - a.occurrences).slice(0, 10);
+    return [...nodes].sort((a, b) => (b.totalLinkStrength || b.occurrences) - (a.totalLinkStrength || a.occurrences)).slice(0, 10);
   }, [nodes]);
+
+  // Performance Analysis Metrics (Donthu et al., 2021 Table 2 & Öztürk et al., 2024 Table 3)
+  const performanceStats = useMemo(() => {
+    const totalPubs = articles.length;
+    const totalCitations = articles.reduce((acc, curr) => acc + (curr.citedByCount || 0), 0);
+    const avgCitations = totalPubs > 0 ? Math.round((totalCitations / totalPubs) * 10) / 10 : 0;
+    const activeYears = Math.max(1, maxYear - minYear + 1);
+    const productivityPerYear = totalPubs > 0 ? Math.round((totalPubs / activeYears) * 10) / 10 : 0;
+
+    // Author Frequency Map (Top Contributors)
+    const authorCounts = new Map<string, { count: number; citations: number }>();
+    articles.forEach((art) => {
+      if (!art.authors) return;
+      const rawList = art.authors.split(/,|;| and /).map((a) => a.trim()).filter((a) => a.length > 2);
+      rawList.slice(0, 3).forEach((author) => {
+        if (!authorCounts.has(author)) authorCounts.set(author, { count: 0, citations: 0 });
+        const entry = authorCounts.get(author)!;
+        entry.count += 1;
+        entry.citations += art.citedByCount || 0;
+      });
+    });
+
+    const topAuthors = Array.from(authorCounts.entries())
+      .sort((a, b) => b[1].count - a[1].count || b[1].citations - a[1].citations)
+      .slice(0, 8)
+      .map(([name, data]) => ({ name, ...data }));
+
+    // Journal / Source Frequency Map
+    const journalCounts = new Map<string, { count: number; citations: number }>();
+    articles.forEach((art) => {
+      const j = art.journal ? art.journal.trim() : "Jurnal / Prosiding Ilmiah";
+      if (!journalCounts.has(j)) journalCounts.set(j, { count: 0, citations: 0 });
+      const entry = journalCounts.get(j)!;
+      entry.count += 1;
+      entry.citations += art.citedByCount || 0;
+    });
+
+    const topJournals = Array.from(journalCounts.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 6)
+      .map(([name, data]) => ({ name, ...data }));
+
+    // Year wise distribution
+    const yearlyMap = new Map<number, number>();
+    articles.forEach((art) => {
+      const y = art.year || 2024;
+      yearlyMap.set(y, (yearlyMap.get(y) || 0) + 1);
+    });
+
+    const yearTrend = Array.from(yearlyMap.entries()).sort((a, b) => a[0] - b[0]);
+
+    return {
+      totalPubs,
+      totalCitations,
+      avgCitations,
+      activeYears,
+      productivityPerYear,
+      topAuthors,
+      topJournals,
+      yearTrend,
+    };
+  }, [articles, minYear, maxYear]);
 
   // Calculate cluster summary stats
   const clusterSummaries = useMemo(() => {
@@ -78,9 +144,9 @@ export function BibliometricMethodologyPanel({
         ? Math.round((yearsWithData.reduce((acc, curr) => acc + (curr.avgPubYear || 0), 0) / yearsWithData.length) * 10) / 10
         : (minYear + maxYear) / 2;
 
-      let status = "Mapan (Established)";
-      if (avgClusterYear >= 2023) {
-        status = "Mutakhir (Emerging Frontier)";
+      let status = "Mapan (Established Foundation)";
+      if (avgClusterYear >= 2024) {
+        status = "Mutakhir (Emerging Frontier 2024-2026)";
       } else if (avgClusterYear >= 2021) {
         status = "Berkembang (Developing Core)";
       }
@@ -97,7 +163,7 @@ export function BibliometricMethodologyPanel({
     });
   }, [clusterMap, minYear, maxYear]);
 
-  // Academic narrative text for Bab 3 Metodologi Penelitian (UNY Thesis standard)
+  // Academic narrative text for Bab 3 Metodologi Penelitian (UNY Thesis standard, citing Donthu 2021 & Öztürk 2024)
   const effectiveBoolean = booleanQuery || query;
   const currentSubject = canvas.title.subject || query;
   const currentIntervention = canvas.title.intervention || "";
@@ -107,47 +173,63 @@ export function BibliometricMethodologyPanel({
       .slice(0, 4)
       .map(
         (cs, idx) =>
-          `Klaster ${idx + 1} didominasi oleh tema "${cs.topKeywords}" dengan rata-rata tahun publikasi ${cs.avgYear} (status: ${cs.status})`
+          `Klaster ${idx + 1} (${cs.nodeCount} istilah) berfokus pada tema "${cs.topKeywords}" dengan rata-rata tahun publikasi ${cs.avgYear} [Status: ${cs.status}]`
       )
-      .join("; ");
+      .join(";\n- ");
 
     return `BAB III. METODOLOGI PENELITIAN
-Sub-bab 3.X. Metode Analisis Bibliometrik dan Pemetaan Literatur Ilmiah
+Sub-bab 3.X. Metode Desain Riset Bibliometrik dan Pemetaan Literatur Ilmiah
 
-3.X.1 Rasionalitas dan Pendekatan Metodologis
-Untuk memperkuat landasan teoretis, menjamin ketajaman identifikasi state-of-the-art, serta membuktikan kebaruan (novelty) penelitian secara objektif dan kuantitatif, penelitian ini menerapkan metode analisis bibliometrik (Donthu et al., 2021). Analisis bibliometrik digunakan sebagai tahapan preliminary research untuk memetakan struktur intelektual dan lanskap keilmuan pada domain ${currentSubject}${currentIntervention ? ` dengan intervensi ${currentIntervention}` : ""}, sekaligus mendeteksi celah riset (research gap) yang belum terselesaikan pada literatur global bereputasi.
+3.X.1 Rasionalitas Metodologis dan Desain Riset
+Penelitian tesis ini mengadopsi kerangka kerja desain riset bibliometrik komprehensif sebagaimana dirumuskan oleh Öztürk, Kocaman, dan Kanbach (2024) serta pedoman analisis bibliometrik internasional oleh Donthu et al. (2021). Analisis bibliometrik diterapkan sebagai tahapan riset pendahuluan (preliminary research) guna menjawab kritik konvensional tinjauan pustaka naratif yang rentan bias subjektif. Melalui integrasi Analisis Kinerja (Performance Analysis) dan Pemetaan Sains (Science Mapping), penelitian ini memetakan lanskap keilmuan, evolusi struktural, dan membuktikan kebaruan (novelty) topik "${currentSubject}"${currentIntervention ? ` dengan intervensi "${currentIntervention}"` : ""} secara kuantitatif berbasis data empiris terindeks global.
 
-3.X.2 Protokol Penelusuran dan Seleksi Data (PRISMA Statement)
-Pengumpulan data bibliografi mengacu pada pedoman standar Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA 2020) dan protokol penelusuran Scopus/Google Scholar. Data artikel ilmiah diekstraksi dari basis data global peer-reviewed (Scopus, OpenAlex, dan CrossRef) menggunakan formulasi kueri Boolean terstruktur sebagai berikut:
+3.X.2 Pertanyaan Riset Bibliometrik (Bibliometric Research Questions)
+Mengacu pada taksonomi pertanyaan riset bibliometrik Öztürk et al. (2024), penyelidikan literatur dirumuskan dalam empat pertanyaan utama:
+1. RQ-1 (Performance Analysis): Bagaimana tren produktivitas publikasi tahunan, akumulasi sitasi, serta sebaran penulis dan jurnal dominan pada topik ${currentSubject}?
+2. RQ-2 (Conceptual Structure): Bagaimana struktur konseptual dan pengelompokan tema utama yang membentuk domain penelitian ini berdasarkan analisis ko-kejadian kata kunci (co-word analysis)?
+3. RQ-3 (Thematic Evolution): Bagaimana pergeseran kronologis fokus riset dan konsep apa saja yang menjadi batas mutakhir (emerging frontiers) dalam 3 tahun terakhir?
+4. RQ-4 (Research Gap): Pada celah keterhubungan antar-klaster manakah penelitian tesis ini memposisikan kontribusi ilmiah dan intervensi rekayasa orisinalnya?
+
+3.X.3 Protokol Penelusuran dan Seleksi Data (Standar PRISMA 2020 & Scopus)
+Pengumpulan data bibliografi dilakukan secara transparan dan dapat direplikasi (replicable protocol) merujuk pedoman PRISMA 2020 dan protokol Scopus. Ekstraksi data dilakukan pada basis data berkala ilmiah internasional bereputasi (Scopus, OpenAlex, dan CrossRef) dengan formulasi kueri Boolean terstruktur:
 Kueri Boolean: ${effectiveBoolean}
 
-Kriteria inklusi mencakup: (a) artikel berkala ilmiah terindeks global dan prosiding konferensi internasional peer-reviewed; (b) dokumen terbitan rentang tahun ${minYear} hingga ${maxYear}; dan (c) dokumen yang memuat kata kunci terstandar dengan frekuensi kemunculan minimum (threshold) ≥ 2 kali. Kriteria eksklusi meliputi dokumen editorial, tinjauan buku non-peer reviewed, serta duplikasi metadata. Melalui protokol seleksi ini, diperoleh sebanyak ${articles.length} artikel ilmiah relevan dengan total ${nodes.length} kata kunci terstandar dan ${edges.length} relasi tautan ko-kejadian.
+Kriteria seleksi ditetapkan sebagai berikut:
+a. Kriteria Inklusi: Dokumen artikel berkala ilmiah (peer-reviewed journal) dan prosiding konferensi internasional; rentang tahun publikasi ${minYear} hingga ${maxYear}; bahasa pengantar Inggris dan Indonesia; memuat metadata kata kunci lengkap dengan ambang batas kemunculan (threshold) ≥ 2 kali.
+b. Kriteria Eksklusi: Dokumen non-peer reviewed (editorial, book review, erratum), artikel tanpa abstrak, dan duplikasi data metadata.
+Berdasarkan protokol tersebut, tersaring sebanyak ${performanceStats.totalPubs} dokumen ilmiah relevan dengan total ${performanceStats.totalCitations} sitasi global (rata-rata ${performanceStats.avgCitations} sitasi per artikel), mencakup ${nodes.length} kata kunci terstandar dan ${edges.length} relasi tautan jejaring.
 
-3.X.3 Unit Analisis dan Normalisasi Asosiasi
-Unit analisis yang digunakan adalah ko-kejadian kata kunci (co-word analysis / keyword co-occurrence) yang mengukur kekuatan asosiasi antar konsep ilmiah berdasarkan frekuensi kemunculan bersama dalam satu publikasi. Normalisasi kekuatan hubungan antar kata kunci dihitung menggunakan metode Association Strength Normalization (Van Eck & Waltman, 2010) dengan formula:
+3.X.4 Analisis Kinerja dan Pemetaan Sains (Performance Analysis & Science Mapping)
+Sesuai taksonomi toolbox Donthu et al. (2021), analisis dioperasikan melalui dua pilar:
+1. Performance Analysis (Analisis Kinerja): Mengukur produktivitas ilmiah (Total Publications / TP = ${performanceStats.totalPubs}, Produktivitas Tahunan = ${performanceStats.productivityPerYear} artikel/tahun) serta mengidentifikasi kontributor terdepan (leading authors dan key journals).
+2. Science Mapping (Pemetaan Sains): Menganalisis relasi sosial (co-authorship), struktur konseptual (co-word analysis), dan jejaring keterhubungan antar-variabel.
+
+3.X.5 Normalisasi Asosiasi VOS dan Algoritma Klastering Louvain
+Kekuatan hubungan ko-kejadian kata kunci dinormalisasi menggunakan Association Strength Normalization (Van Eck & Waltman, 2010):
 S_ij = c_ij / (2 * m * s_i * s_j)
-di mana S_ij melambangkan kekuatan asosiasi antara kata kunci i dan j, c_ij adalah frekuensi ko-kejadian keduanya, s_i dan s_j adalah total kemunculan masing-masing kata kunci, serta m merepresentasikan total seluruh relasi jejaring.
+di mana S_ij adalah kekuatan asosiasi ternormalisasi antara konsep i dan j, c_ij adalah frekuensi ko-kejadian keduanya, s_i dan s_j adalah total kemunculan masing-masing istilah, dan m merepresentasikan total bobot tautan jejaring.
+Partisi komunitas tematik diidentifikasi secara otomatis menggunakan optimasi modularitas Louvain (Louvain Community Detection Algorithm). Melalui algoritma ini, teridentifikasi ${clusterSummaries.length} klaster tematik utama:
+- ${clusterDescriptions}.
 
-3.X.4 Deteksi Komunitas Tematik dan Sintesis Celah Riset
-Pengelompokan kata kunci ke dalam klaster tematik dilakukan secara otomatis menggunakan algoritma optimasi modularitas Louvain (Louvain Community Detection Algorithm). Melalui algoritma ini, teridentifikasi ${clusterSummaries.length} klaster tematik utama pada topik penelitian: ${clusterDescriptions}.
+3.X.6 Interpretasi Melalui Kerangka Kerja Sensemaking 3S (Lim & Kumar, 2023)
+Interpretasi hasil bibliometrik dipandu oleh kerangka 3S (Scanning, Sensing, Substantiating):
+1. Scanning: Mengidentifikasi pola makro percepatan riset dan pemusatan topik dominan.
+2. Sensing: Menelaah alasan mendalam mengapa klaster tertentu belum terhubung (structural holes), yang mengindikasikan adanya batasan empiris atau kelangkaan penelitian gabungan.
+3. Substantiating: Membuktikan bahwa intervensi rekayasa yang diusulkan pada Kanvas Tesis ini secara akurat mengisi celah riset (research gap) di antara klaster-klaster tersebut, sehingga terhindar dari jebakan novelty semu (lokasi atau software semata).
 
-Visualisasi jejaring bibliometrik dianalisis melalui dua tampilan utama perangkat VOSviewer:
-1. Network Visualization (Visualisasi Jaringan): Menggambarkan klaster tematik berdasarkan partisi komunitas Louvain, di mana ukuran node mencerminkan bobot kemunculan (occurrences) dan ketebalan garis mencerminkan kekuatan tautan (link strength).
-2. Overlay Visualization (Visualisasi Hamparan Waktu): Menggambarkan evolusi kronologis penelitian berdasarkan rata-rata tahun terbit (average publication year), membedakan topik fondasi klasik (≤ 2020) dari topik mutakhir/frontier (2024–${maxYear}).
-
-Berdasarkan pemetaan ini, posisi kebaruan (novelty) penelitian ini difokuskan pada pengisian celah keterhubungan antar-klaster yang masih minim relasi empiris, guna menghasilkan kontribusi rekayasa yang teruji dan orisinal.
-
-Referensi Metodologi:
-1. Donthu, N., Kumar, S., Mukherjee, D., Pandey, N., & Lim, W. M. (2021). How to conduct a bibliometric analysis: An overview and guidelines. Journal of Business Research, 133, 285-296.
-2. Page, M. J., et al. (2021). The PRISMA 2020 statement: an updated guideline for reporting systematic reviews. BMJ, 372, n71.
-3. Van Eck, N. J., & Waltman, L. (2010). Software survey: VOSviewer, a computer program for bibliometric mapping. Scientometrics, 84(2), 523-538.`;
+Daftar Pustaka Rujukan Metodologi:
+1. Donthu, N., Kumar, S., Mukherjee, D., Pandey, N., & Lim, W. M. (2021). How to conduct a bibliometric analysis: An overview and guidelines. Journal of Business Research, 133, 285–296.
+2. Öztürk, O., Kocaman, R., & Kanbach, D. K. (2024). How to design bibliometric research: an overview and a framework proposal. Review of Managerial Science, 18, 3333–3361.
+3. Lim, W. M., & Kumar, S. (2023). Guidelines for interpreting the results of bibliometric analysis: a sensemaking approach. Global Business and Organizational Excellence, 43(2), 17–26.
+4. Page, M. J., et al. (2021). The PRISMA 2020 statement: an updated guideline for reporting systematic reviews. BMJ, 372, n71.
+5. Van Eck, N. J., & Waltman, L. (2010). Software survey: VOSviewer, a computer program for bibliometric mapping. Scientometrics, 84(2), 523–538.`;
   }, [
     effectiveBoolean,
     currentSubject,
     currentIntervention,
     minYear,
     maxYear,
-    articles.length,
+    performanceStats,
     nodes.length,
     edges.length,
     clusterSummaries,
@@ -159,7 +241,6 @@ Referensi Metodologi:
       setCopiedBab3(true);
       setTimeout(() => setCopiedBab3(false), 3000);
     } catch {
-      // Fallback
       const ta = document.createElement("textarea");
       ta.value = bab3Narrative;
       document.body.appendChild(ta);
@@ -175,7 +256,6 @@ Referensi Metodologi:
     if (!onChange) return;
 
     onChange((prev) => {
-      // Create new secondary data item for bibliometric data
       const biblioData: DataNeed = {
         id: crypto.randomUUID(),
         name: `Dataset Metadata Bibliometrik Scopus & OpenAlex (${query})`,
@@ -183,35 +263,34 @@ Referensi Metodologi:
         source: "Basis Data Scopus, OpenAlex, dan CrossRef via API Metopen UNY",
         availability: "available",
         accessEvidence: "Akses terbuka dan terintegrasi via API Akademik",
-        estimatedSize: `${articles.length} artikel ilmiah peer-reviewed (${nodes.length} kata kunci)`,
+        estimatedSize: `${performanceStats.totalPubs} artikel ilmiah peer-reviewed (${nodes.length} kata kunci)`,
         timeEstimateWeeks: 2,
         risk: "Perubahan struktur indeks jurnal internasional",
         mitigation: "Penyaringan multi-database (Scopus, CrossRef, Europe PMC)",
       };
 
-      // Add standard tools & software
       const currentTools = prev.method.tools || [];
       const newTools = Array.from(
         new Set([
           ...currentTools,
           "VOSviewer 1.6.20 (Visualisasi Jejaring Bibliometrik)",
           "Graphology Louvain Clustering Engine",
+          "Bibliometrix R Package / BiblioShiny",
         ])
       );
 
-      // Add standard bibliometric guidelines
       const currentStandards = prev.method.standards || [];
       const newStandards = Array.from(
         new Set([
           ...currentStandards,
+          "Pedoman Desain Riset Bibliometrik Öztürk et al. (2024, RMS)",
+          "Standar Analisis Bibliometrik Donthu et al. (2021, JBR)",
           "PRISMA 2020 Statement (Pedoman Pelaporan Tinjauan Sistematis)",
-          "Standar Analisis Bibliometrik Donthu et al. (2021)",
           "Van Eck & Waltman (2010) - Algoritma VOS Normalization",
         ])
       );
 
-      // Description
-      const biblioSummary = `Analisis bibliometrik preliminary menggunakan kueri Boolean "${effectiveBoolean}" pada basis data Scopus dan OpenAlex (${articles.length} artikel, rentang ${minYear}-${maxYear}) dengan pemetaan ko-kejadian kata kunci VOSviewer dan deteksi klaster Louvain.`;
+      const biblioSummary = `Analisis bibliometrik preliminary menggunakan kueri Boolean "${effectiveBoolean}" pada basis data Scopus dan OpenAlex (${performanceStats.totalPubs} artikel, rentang ${minYear}-${maxYear}) dengan pemetaan ko-kejadian kata kunci VOSviewer, evaluasi kinerja publikasi, dan deteksi klaster Louvain (Donthu et al., 2021; Öztürk et al., 2024).`;
       const currentDesc = prev.method.description || "";
       const updatedDesc = currentDesc.includes("bibliometrik")
         ? currentDesc
@@ -219,7 +298,6 @@ Referensi Metodologi:
         ? `${biblioSummary}\n\nPengujian Lanjutan: ${currentDesc}`
         : biblioSummary;
 
-      // Retain or set approach
       const targetApproach =
         prev.method.approach === "experimental_lab" ||
         prev.method.approach === "field_study" ||
@@ -228,7 +306,6 @@ Referensi Metodologi:
           ? prev.method.approach
           : "bibliometric_slr";
 
-      // Also register into literatureMap metadata
       const existingDataNeeds = prev.method.dataNeeds || [];
       const hasAlready = existingDataNeeds.some((d) => d.name.toLowerCase().includes("bibliometrik"));
       const updatedDataNeeds = hasAlready ? existingDataNeeds : [biblioData, ...existingDataNeeds];
@@ -265,57 +342,53 @@ Referensi Metodologi:
     const textContent = `${bab3Narrative}
 
 =======================================================
-TABEL PROTOKOL PENELUSURAN BIBLIOMETRIK (PRISMA 2020)
+RINGKASAN METRIK KINERJA (DONTHU ET AL., 2021)
 =======================================================
-1. Topik Penelitian : ${query}
-2. Kueri Boolean    : ${effectiveBoolean}
-3. Basis Data       : Scopus, OpenAlex, CrossRef, Europe PMC, Google Scholar
-4. Kriteria Inklusi : Artikel berkala ilmiah & prosiding peer-reviewed, tahun ${minYear}-${maxYear}
-5. Kriteria Eksklusi: Non-peer review, dokumen editorial, duplikat
-6. Threshold        : Frekuensi kemunculan kata kunci >= 2 kali
-7. Unit Analisis    : Co-occurrence of Author Keywords & Concepts
-8. Normalisasi      : Association Strength Normalization (Van Eck & Waltman, 2010)
-9. Algoritma Klaster: Louvain Community Detection (Modularity Optimization)
-10. Engine Layout   : VOSviewer Visual Standard Layout
+- Total Publikasi (TP)       : ${performanceStats.totalPubs} artikel
+- Total Sitasi (TC)          : ${performanceStats.totalCitations} sitasi
+- Rata-rata Sitasi (AC)      : ${performanceStats.avgCitations} per publikasi
+- Rentang Tahun Aktif (NAY)  : ${performanceStats.activeYears} tahun (${minYear} - ${maxYear})
+- Produktivitas Tahunan (PAY): ${performanceStats.productivityPerYear} artikel/tahun
 
-Statistik Ekstraksi:
-- Total Artikel Ilmiah  : ${articles.length} dokumen
-- Total Kata Kunci Unik : ${nodes.length} term
-- Total Relasi / Edges  : ${edges.length} link
-- Rentang Tahun         : ${minYear} - ${maxYear}
-- Klaster Teridentifikasi: ${clusterSummaries.length} klaster
+Penulis Paling Produktif:
+${performanceStats.topAuthors.map((a) => `- ${a.name}: ${a.count} artikel (${a.citations} sitasi)`).join("\n")}
 
-Klaster Tematik:
-${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata kunci | Tema: ${cs.topKeywords} | Rata-rata Tahun: ${cs.avgYear} (${cs.status})`).join("\n")}
+Jurnal Ilmiah Dominan:
+${performanceStats.topJournals.map((j) => `- ${j.name}: ${j.count} artikel (${j.citations} sitasi)`).join("\n")}
 `;
 
     const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Protokol-Metode-Bibliometrik-${query.replace(/\s+/g, "_")}.txt`;
+    a.download = `Protokol-Bibliometrik-Donthu-Ozturk-${query.replace(/\s+/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-6">
-      {/* Top Banner & Actions */}
+      {/* Top Banner & Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-[11px] font-bold text-blue-700 dark:text-blue-300 mb-1.5">
-            <BookOpen className="w-3.5 h-3.5" />
-            Metodologi Penelitian Akademis (Standar UNY & Scopus)
-          </span>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-[11px] font-bold text-blue-700 dark:text-blue-300">
+              <BookOpen className="w-3.5 h-3.5" />
+              Kerangka Kerja Donthu et al. (2021) &amp; Öztürk et al. (2024)
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200">
+              Standar Pascasarjana UNY
+            </span>
+          </div>
           <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-            Metode Analisis Bibliometrik (Bab 3 Proposal Tesis)
+            Desain Riset &amp; Metode Analisis Bibliometrik (Bab 3 Proposal Tesis)
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Dokumentasi protokol penelitian, formalisasi kueri Boolean, dan draf narasi Bab 3 yang siap disalin ke proposal tesis Anda.
+            Formalisasi metodologi komprehensif: Analisis Kinerja (*Performance Analysis*), Pemetaan Sains (*Science Mapping*), dan Narasi Sensemaking untuk Bab 3.
           </p>
         </div>
 
-        {/* Quick Action Buttons */}
+        {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -371,12 +444,12 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
         <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>
-            <strong>Berhasil!</strong> Metodologi bibliometrik telah otomatis dimasukkan ke Langkah 4 (Metode Inti &amp; Kebutuhan Data). Anda dapat melihat rincian alat uji VOSviewer dan kebutuhan data sekunder di tab Langkah 4.
+            <strong>Berhasil!</strong> Metodologi bibliometrik telah otomatis dimasukkan ke Langkah 4 (Metode Inti &amp; Kebutuhan Data). Standar acuan Donthu et al. (2021) &amp; Öztürk et al. (2024) serta dataset sekunder telah tercatat.
           </span>
         </div>
       )}
 
-      {/* Internal Navigation Tabs */}
+      {/* Internal Navigation Tabs (Aligned with Donthu & Ozturk stages) */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
           type="button"
@@ -388,7 +461,33 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
           }`}
         >
           <Database className="w-3.5 h-3.5" />
-          <span>1. Tabel Protokol Riset (PRISMA)</span>
+          <span>1. Desain Riset &amp; Protokol (Öztürk 2024)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("performance")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "performance"
+              ? "bg-blue-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>2. Analisis Kinerja (Donthu Table 2)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("mapping")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "mapping"
+              ? "bg-blue-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>3. Pemetaan Sains &amp; Klaster ({clusterSummaries.length})</span>
         </button>
 
         <button
@@ -401,68 +500,92 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
-          <span>2. Draf Narasi Bab 3 (Siap Salin)</span>
+          <span>4. Draf Bab 3 Metodologi (Siap Salin)</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab("clusters")}
+          onClick={() => setActiveTab("sensemaking")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "clusters"
+            activeTab === "sensemaking"
               ? "bg-blue-600 text-white shadow-xs"
               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <Layers className="w-3.5 h-3.5" />
-          <span>3. Klaster Tematik &amp; Metrik ({clusterSummaries.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("units")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "units"
-              ? "bg-blue-600 text-white shadow-xs"
-              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-          }`}
-        >
-          <Compass className="w-3.5 h-3.5" />
-          <span>4. Panduan 3 Metode Bibliometrik</span>
+          <Lightbulb className="w-3.5 h-3.5" />
+          <span>5. Kerangka Sensemaking 3S (Lim &amp; Kumar 2023)</span>
         </button>
       </div>
 
-      {/* TAB 1: PROTOKOL STANDAR PRISMA & SCOPUS */}
+      {/* TAB 1: PROTOKOL & DESAIN RISET (ÖZTÜRK ET AL., 2024) */}
       {activeTab === "protocol" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Artikel Ilmiah</span>
-              <p className="text-xl font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">{articles.length}</p>
-              <span className="text-[10px] text-slate-500">Peer-reviewed terindeks</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Kata Kunci Unik</span>
-              <p className="text-xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">{nodes.length}</p>
-              <span className="text-[10px] text-slate-500">Ambang batas kemunculan ≥ 2x</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tautan Relasi (Edges)</span>
-              <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{edges.length}</p>
-              <span className="text-[10px] text-slate-500">Kekuatan ko-kejadian terukur</span>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Klaster Tematik</span>
-              <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-0.5">{clusterSummaries.length}</p>
-              <span className="text-[10px] text-slate-500">Partisi komunitas Louvain</span>
+          <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs space-y-2">
+            <h4 className="font-extrabold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+              <Compass className="w-4 h-4 text-blue-600" />
+              4 Tahap Desain Riset Bibliometrik (Öztürk, Kocaman, &amp; Kanbach, 2024):
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px] pt-1">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <strong className="text-blue-700 dark:text-blue-300">Tahap 1: Tujuan &amp; Pertanyaan Riset</strong>
+                <p className="text-slate-500 mt-0.5">Merumuskan RQs eksplisit untuk analisis kinerja dan pemetaan relasi konsep.</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <strong className="text-indigo-700 dark:text-indigo-300">Tahap 2: Pengumpulan &amp; Seleksi Data</strong>
+                <p className="text-slate-500 mt-0.5">Penelusuran kueri Boolean, filtering inklusi/eksklusi, dan pembersihan duplikasi.</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <strong className="text-emerald-700 dark:text-emerald-300">Tahap 3: Analisis &amp; Visualisasi</strong>
+                <p className="text-slate-500 mt-0.5">Perhitungan normalisasi VOS, Louvain community clustering, dan visual graf.</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <strong className="text-amber-700 dark:text-amber-300">Tahap 4: Interpretasi Sensemaking</strong>
+                <p className="text-slate-500 mt-0.5">Menjawab RQs dan mentransformasikan temuan klaster menjadi bukti novelty.</p>
+              </div>
             </div>
           </div>
 
+          {/* Research Questions derived according to Öztürk Table 7 */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+            <h4 className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+              <GitFork className="w-4 h-4 text-indigo-600" />
+              Pertanyaan Riset Bibliometrik Khusus Topik Anda (Standar Öztürk et al., 2024 Tabel 7):
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">RQ-1 (Performance Analysis)</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  &quot;Bagaimana tren volume publikasi tahunan dan siapa peneliti serta jurnal paling produktif pada domain {currentSubject}?&quot;
+                </p>
+              </div>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">RQ-2 (Conceptual / Co-word)</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  &quot;Klaster tematik apa saja yang terdeteksi dan bagaimana struktur konseptual menghubungkan variabel {currentSubject}?&quot;
+                </p>
+              </div>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">RQ-3 (Thematic Evolution)</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  &quot;Bagaimana evolusi kronologis penelitian dan topik apa saja yang menjadi batas mutakhir (emerging frontiers 2024–2026)?&quot;
+                </p>
+              </div>
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">RQ-4 (Research Gap Identification)</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  &quot;Pada celah persilangan antar-klaster manakah intervensi tesis Anda mengisi kekosongan literatur secara orisinal?&quot;
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Protocol Table */}
           <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
                 <tr>
                   <th className="p-3 border-b border-slate-200 dark:border-slate-700 w-1/4">Elemen Protokol</th>
-                  <th className="p-3 border-b border-slate-200 dark:border-slate-700">Spesifikasi Akademis</th>
+                  <th className="p-3 border-b border-slate-200 dark:border-slate-700">Spesifikasi Akademis Terstandar</th>
                   <th className="p-3 border-b border-slate-200 dark:border-slate-700 w-1/4">Kaidah Rujukan</th>
                 </tr>
               </thead>
@@ -470,25 +593,25 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
                 <tr>
                   <td className="p-3 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <Database className="w-3.5 h-3.5 text-blue-600" />
-                    Basis Data Sumber
+                    Basis Data Terpilih
                   </td>
                   <td className="p-3 text-slate-700 dark:text-slate-300">
                     Scopus, OpenAlex, CrossRef, Europe PMC, Google Scholar
                   </td>
-                  <td className="p-3 text-slate-500 text-[11px]">Indeksasi Internasional Bereputasi</td>
+                  <td className="p-3 text-slate-500 text-[11px]">Öztürk et al. (2024, Bagian 3.2.1)</td>
                 </tr>
 
                 <tr>
                   <td className="p-3 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 text-amber-600" />
-                    Kueri Boolean Aktif
+                    Kueri Boolean Terstruktur
                   </td>
                   <td className="p-3">
                     <code className="text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-1 rounded-md font-mono text-[11px] block break-all">
                       {effectiveBoolean}
                     </code>
                   </td>
-                  <td className="p-3 text-slate-500 text-[11px]">Logika Boolean Standar Scopus (AND, OR, &quot;...&quot;)</td>
+                  <td className="p-3 text-slate-500 text-[11px]">Logika Boolean Scopus (AND, OR, &quot;...&quot;)</td>
                 </tr>
 
                 <tr>
@@ -497,7 +620,7 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
                     Kriteria Inklusi
                   </td>
                   <td className="p-3 text-slate-700 dark:text-slate-300">
-                    Artikel jurnal berkala ilmiah dan konferensi internasional peer-reviewed; rentang tahun {minYear}–{maxYear}; bahasa Inggris dan Indonesia; memuat kata kunci teridentifikasi.
+                    Artikel jurnal dan prosiding peer-reviewed; rentang tahun {minYear}–{maxYear}; bahasa Inggris dan Indonesia; memuat kata kunci teridentifikasi dengan ambang kemunculan $\ge 2$ kali.
                   </td>
                   <td className="p-3 text-slate-500 text-[11px]">PRISMA 2020 Statement</td>
                 </tr>
@@ -510,7 +633,7 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
                   <td className="p-3 text-slate-700 dark:text-slate-300">
                     Dokumen editorial, tinjauan buku non-peer review, dokumen tanpa abstrak, artikel dengan duplikasi metadata.
                   </td>
-                  <td className="p-3 text-slate-500 text-[11px]">Prosedur Pembersihan Data (Donthu et al., 2021)</td>
+                  <td className="p-3 text-slate-500 text-[11px]">Donthu et al. (2021, Step 3)</td>
                 </tr>
 
                 <tr>
@@ -519,9 +642,9 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
                     Unit Analisis
                   </td>
                   <td className="p-3 text-slate-700 dark:text-slate-300">
-                    Ko-kejadian kata kunci (Keyword Co-occurrence / Co-word Analysis) dan analisis hamparan evolusi waktu (Temporal Overlay).
+                    Ko-kejadian kata kunci (Co-word analysis), Analisis Kinerja publikasi/penulis, dan Analisis Hamparan Waktu (Overlay Evolution).
                   </td>
-                  <td className="p-3 text-slate-500 text-[11px]">Struktur Konseptual dan Celah Riset</td>
+                  <td className="p-3 text-slate-500 text-[11px]">Donthu et al. (2021, Section 3.2.4)</td>
                 </tr>
 
                 <tr>
@@ -545,54 +668,101 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
                   </td>
                   <td className="p-3 text-slate-500 text-[11px]">Blondel et al. (2008)</td>
                 </tr>
-
-                <tr>
-                  <td className="p-3 font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-teal-600" />
-                    Mesin Visualisasi
-                  </td>
-                  <td className="p-3 text-slate-700 dark:text-slate-300">
-                    VOSviewer Visual Standard Layout Engine &amp; Cytoscape.js Network Renderer
-                  </td>
-                  <td className="p-3 text-slate-500 text-[11px]">Standar Pemetaan VOSviewer Internasional</td>
-                </tr>
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* TAB 2: DRAF NARASI BAB 3 METODOLOGI (SIAP SALIN KE MS WORD) */}
-      {activeTab === "bab3" && (
+      {/* TAB 2: ANALISIS KINERJA (DONTHU ET AL., 2021 TABEL 2) */}
+      {activeTab === "performance" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200">
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-              Teks di bawah ini telah disesuaikan dengan pedoman penulisan tesis Pascasarjana UNY (struktur sub-bab, istilah baku, dan sitasi standar).
-            </span>
-            <button
-              type="button"
-              onClick={handleCopyBab3}
-              className="shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer"
-            >
-              {copiedBab3 ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedBab3 ? "Tersalin!" : "Salin Teks"}</span>
-            </button>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Publikasi (TP)</span>
+              <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">{performanceStats.totalPubs}</p>
+              <span className="text-[10px] text-slate-500">Artikel ilmiah tervalidasi</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Sitasi (TC)</span>
+              <p className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">{performanceStats.totalCitations}</p>
+              <span className="text-[10px] text-slate-500">Sitasi global kumulatif</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Rata-Rata Sitasi (AC)</span>
+              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{performanceStats.avgCitations}</p>
+              <span className="text-[10px] text-slate-500">Sitasi per artikel (TC / TP)</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Produktivitas Tahunan</span>
+              <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-0.5">{performanceStats.productivityPerYear}</p>
+              <span className="text-[10px] text-slate-500">Artikel / tahun aktif</span>
+            </div>
           </div>
 
-          <div className="relative">
-            <pre className="p-5 rounded-2xl bg-slate-900 text-slate-100 text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-[460px] overflow-y-auto border border-slate-800 selection:bg-blue-500 selection:text-white">
-              {bab3Narrative}
-            </pre>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Top Authors */}
+            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+              <h4 className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                Penulis Terkemuka (Leading Authors &amp; Contributors)
+              </h4>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                {performanceStats.topAuthors.length === 0 ? (
+                  <p className="text-slate-400 py-3">Data penulis belum dimuat.</p>
+                ) : (
+                  performanceStats.topAuthors.map((auth, idx) => (
+                    <div key={idx} className="py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{auth.name}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        <strong>{auth.count}</strong> publikasi &bull; <strong>{auth.citations}</strong> sitasi
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Top Journals */}
+            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+              <h4 className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Award className="w-4 h-4 text-amber-600" />
+                Jurnal Ilmiah Dominan (Key Publishing Outlets)
+              </h4>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                {performanceStats.topJournals.length === 0 ? (
+                  <p className="text-slate-400 py-3">Data jurnal belum dimuat.</p>
+                ) : (
+                  performanceStats.topJournals.map((jr, idx) => (
+                    <div key={idx} className="py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{jr.name}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 shrink-0 ml-2">
+                        <strong>{jr.count}</strong> artikel &bull; <strong>{jr.citations}</strong> sitasi
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* TAB 3: KLASTER TEMATIK & METRIK JARINGAN */}
-      {activeTab === "clusters" && (
+      {/* TAB 3: PEMETAAN SAINS & KLASTER (DONTHU SECTION 3.2 & VOSVIEWER) */}
+      {activeTab === "mapping" && (
         <div className="space-y-4">
           <div className="text-xs text-slate-500">
-            Berikut adalah rincian klaster tematik yang terdeteksi secara otomatis melalui partisi modularitas Louvain. Warna klaster identik dengan pewarnaan pada peta VOSviewer.
+            Pemetaan Sains (*Science Mapping*) menggambarkan hubungan konseptual (*co-word*), relasi sosial (*co-authorship*), dan partisi klaster tematik Louvain.
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -637,10 +807,11 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
             ))}
           </div>
 
-          {/* Top Keywords Table */}
+          {/* Centrality Metrics (Donthu 2021 Section 4.1) */}
           <div className="pt-2 space-y-2">
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-              10 Kata Kunci Inti (Core Nodes) dengan Bobot Kemunculan Tertinggi:
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4 text-indigo-600" />
+              10 Node Inti Berdasarkan Total Link Strength (TLS) &amp; Centrality (Donthu et al., 2021 Section 4.1):
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {topKeywords.map((k) => (
@@ -648,7 +819,7 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
                   key={k.id}
                   className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-2xs"
                 >
-                  {k.label} &bull; <strong className="text-blue-600 dark:text-blue-400">{k.occurrences}x</strong>
+                  {k.label} &bull; <strong className="text-blue-600 dark:text-blue-400">{k.occurrences}x</strong> (TLS: {k.totalLinkStrength || k.links * 2})
                 </span>
               ))}
             </div>
@@ -656,74 +827,100 @@ ${clusterSummaries.map((cs) => `- Klaster ${cs.clusterId}: ${cs.nodeCount} kata 
         </div>
       )}
 
-      {/* TAB 4: PANDUAN 3 METODE BIBLIOMETRIK */}
-      {activeTab === "units" && (
+      {/* TAB 4: DRAF BAB 3 METODOLOGI (BERBASIS DONTHU 2021 & ÖZTÜRK 2024) */}
+      {activeTab === "bab3" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200">
+            <span className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+              Teks di bawah ini telah diselaraskan dengan pedoman penulisan tesis Pascasarjana UNY serta framework Öztürk et al. (2024) dan Donthu et al. (2021).
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyBab3}
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+            >
+              {copiedBab3 ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedBab3 ? "Tersalin!" : "Salin Teks"}</span>
+            </button>
+          </div>
+
+          <div className="relative">
+            <pre className="p-5 rounded-2xl bg-slate-900 text-slate-100 text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-[460px] overflow-y-auto border border-slate-800 selection:bg-blue-500 selection:text-white">
+              {bab3Narrative}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: KERANGKA SENSEMAKING 3S (LIM & KUMAR 2023 / ÖZTÜRK 2024 TABLE 6) */}
+      {activeTab === "sensemaking" && (
         <div className="space-y-4">
           <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
             <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <strong>Kapan Menggunakan Analisis Bibliometrik pada Tesis Pascasarjana?</strong>
-              <p className="mt-0.5 text-slate-600 dark:text-slate-300">
-                Pada program magister (S2) seperti di UNY, dosen pembimbing mewajibkan pembuktian bahwa topik tesis Anda memiliki <em>novelty</em> yang kuat dan bukan sekadar replikasi lokasi. Analisis bibliometrik menjadi instrumen ilmiah paling kredibel untuk menyajikan peta topik dan membuktikan celah penelitian (*research gap*) secara kuantitatif.
+              <strong>Mengapa Pendekatan Sensemaking Sangat Krusial? (Lim &amp; Kumar, 2023)</strong>
+              <p className="mt-0.5 text-slate-600 dark:text-slate-300 leading-relaxed">
+                Banyak mahasiswa pascasarjana terjebak hanya menampilkan gambar VOSviewer tanpa mampu mengartikulasikan <em>makna dan implikasi</em> di balik graf. Melalui kerangka kerja 3S (Scanning &rarr; Sensing &rarr; Substantiating), Anda dapat mempertahankan proposal tesis di depan penguji dengan argumen akademik yang kokoh.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Card 1 */}
+            {/* Stage 1: Scanning */}
             <div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 space-y-2.5">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                  1
+                  S1
                 </span>
                 <h4 className="font-extrabold text-xs text-blue-900 dark:text-blue-200">
-                  Ko-kejadian Kata Kunci (Co-occurrence)
+                  Scanning (Pengenalan Pola Makro)
                 </h4>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Mengukur kemunculan kata kunci yang bersamaan di dalam satu publikasi ilmiah. Semakin sering muncul bersama, semakin kuat kedekatan konseptualnya.
+                Mengidentifikasi metrik kuantitatif makro: lonjakan volume publikasi, penulis terkemuka, jurnal dominan, dan {clusterSummaries.length} klaster tematik yang terdeteksi.
               </p>
-              <div className="text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                <strong className="text-blue-700 dark:text-blue-300">Tujuan di Tesis:</strong>
-                <p className="text-slate-500 mt-0.5">Mendeteksi sub-topik yang sudah jenuh diteliti vs topik yang jarang dihubungkan (menjadi <strong>Research Gap</strong>).</p>
+              <div className="text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <strong className="text-blue-700 dark:text-blue-300">Penerapan pada Tesis Anda:</strong>
+                <p className="text-slate-500">Membuktikan kepada dosen pembimbing bahwa domain riset Anda aktif diteliti dan memiliki literatur yang memadai ({performanceStats.totalPubs} artikel peer-reviewed).</p>
               </div>
             </div>
 
-            {/* Card 2 */}
+            {/* Stage 2: Sensing */}
+            <div className="p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                  S2
+                </span>
+                <h4 className="font-extrabold text-xs text-indigo-900 dark:text-indigo-200">
+                  Sensing (Menelaah How &amp; Why)
+                </h4>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                Menelaah keterkaitan mendalam antar-klaster: mengapa tema tertentu belum banyak dihubungkan (structural hole) dan apa akar permasalahan rekayasa yang belum terjawab.
+              </p>
+              <div className="text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <strong className="text-indigo-700 dark:text-indigo-300">Penerapan pada Tesis Anda:</strong>
+                <p className="text-slate-500">Menjadi argumen utama dalam perumusan <strong>Research Gap</strong> (Langkah 2) dan <strong>Pertanyaan Riset Utama</strong> (Langkah 3).</p>
+              </div>
+            </div>
+
+            {/* Stage 3: Substantiating */}
             <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2.5">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                  2
+                  S3
                 </span>
                 <h4 className="font-extrabold text-xs text-emerald-900 dark:text-emerald-200">
-                  Evolusi Temporal (Thematic Overlay)
+                  Substantiating (Bukti Kredibilitas)
                 </h4>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Mengaitkan setiap kata kunci dengan rata-rata tahun terbitnya menggunakan gradien warna VOSviewer (biru tua &rarr; hijau &rarr; kuning keemasan).
+                Membuktikan validitas metodologi melalui prosedur triangulasi data, normalisasi matematis VOS, dan kriteria replikasi PRISMA 2020.
               </p>
-              <div className="text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                <strong className="text-emerald-700 dark:text-emerald-300">Tujuan di Tesis:</strong>
-                <p className="text-slate-500 mt-0.5">Memastikan riset Anda menargetkan isu terkini (2024–{maxYear}) dan menghindari topik usang yang sudah ditinggalkan.</p>
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="p-4 rounded-2xl border border-purple-200 dark:border-purple-900 bg-purple-50/40 dark:bg-purple-950/20 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs">
-                  3
-                </span>
-                <h4 className="font-extrabold text-xs text-purple-900 dark:text-purple-200">
-                  Kolaborasi Penulis (Co-authorship)
-                </h4>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Menganalisis kolaborasi antar-peneliti utama, universitas, dan negara asal dalam menghasilkan karya ilmiah pada tema penelitian tersebut.
-              </p>
-              <div className="text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                <strong className="text-purple-700 dark:text-purple-300">Tujuan di Tesis:</strong>
-                <p className="text-slate-500 mt-0.5">Mengidentifikasi siapa pakar terdepan dan institusi rujukan utama yang wajib dikutip di Bab 2 Tinjauan Pustaka.</p>
+              <div className="text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <strong className="text-emerald-700 dark:text-emerald-300">Penerapan pada Tesis Anda:</strong>
+                <p className="text-slate-500">Menjamin usulan tesis Anda lulus rubrik kelayakan akademik dosen pembimbing dengan skor tertinggi pada kriteria <em>Kejelasan Gap</em> dan <em>Kebaruan (Novelty)</em>.</p>
               </div>
             </div>
           </div>
