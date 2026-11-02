@@ -49,6 +49,7 @@ export function LiteratureSearchDirect({
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeSearchedTopic, setActiveSearchedTopic] = useState<string>("");
 
   // Network State
   const [nodes, setNodes] = useState<VosNode[]>([]);
@@ -61,16 +62,21 @@ export function LiteratureSearchDirect({
   const [transferredIds, setTransferredIds] = useState<Set<string>>(new Set());
 
   const handleSearch = async (searchQuery: string = query) => {
-    if (!searchQuery.trim()) return;
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(
-        `/api/literature/search?q=${encodeURIComponent(searchQuery)}&minOccurrences=${minOccurrences}`
+        `/api/literature/search?q=${encodeURIComponent(trimmed)}&minOccurrences=${minOccurrences}`
       );
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Gagal mencari data literatur.");
+      }
+
+      if (!data.nodes || data.nodes.length === 0) {
+        setError(`Tidak ditemukan kata kunci yang cukup untuk topik "${trimmed}". Coba gunakan variasi kata kunci lain atau dalam bahasa Inggris.`);
       }
 
       setNodes(data.nodes || []);
@@ -78,6 +84,7 @@ export function LiteratureSearchDirect({
       setArticles(data.articles || []);
       setMinYear(data.minYear || 2018);
       setMaxYear(data.maxYear || 2025);
+      setActiveSearchedTopic(trimmed);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mencari literatur.";
       setError(msg);
@@ -259,6 +266,21 @@ export function LiteratureSearchDirect({
       {/* When Network is Loaded */}
       {hasGraph ? (
         <div className="space-y-6">
+          {/* Active Searched Topic Banner */}
+          {activeSearchedTopic && (
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+                <span className="text-slate-700 dark:text-slate-300">
+                  Topik Literatur: <strong className="text-blue-700 dark:text-blue-300 font-extrabold text-sm">&quot;{activeSearchedTopic}&quot;</strong>
+                </span>
+              </div>
+              <span className="text-slate-500 font-semibold text-[11px]">
+                {articles.length} Artikel Ilmiah Terindeks &bull; {nodes.length} Kata Kunci &bull; {edges.length} Tautan Relasi
+              </span>
+            </div>
+          )}
+
           {/* Controls Bar & Mode Switcher */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
             <div className="flex flex-wrap items-center gap-1.5">

@@ -70,4 +70,59 @@ describe("OpenAlex Literature Parser & Direct VOSviewer Network Builder", () => 
     expect(result.minYear).toBe(2023);
     expect(result.maxYear).toBe(2024);
   });
+
+  it("accurately builds a network for data center topics without irrelevant literature", () => {
+    const dataCenterMockWorks = [
+      {
+        id: "https://openalex.org/W-DC1",
+        title: "Energy efficiency and cooling systems in green data centers",
+        publication_year: 2024,
+        cited_by_count: 32,
+        primary_location: { source: { display_name: "IEEE Transactions on Cloud Computing" } },
+        authorships: [{ author: { display_name: "Alice Wang" } }],
+        keywords: [
+          { display_name: "data center", score: 0.98 },
+          { display_name: "cooling systems", score: 0.92 },
+          { display_name: "energy consumption", score: 0.88 },
+        ],
+        concepts: [
+          { display_name: "Data center", score: 0.95, level: 2 },
+          { display_name: "Energy consumption", score: 0.85, level: 2 },
+        ],
+      },
+      {
+        id: "https://openalex.org/W-DC2",
+        title: "Workload scheduling and resource allocation in cloud data center networks",
+        publication_year: 2025,
+        cited_by_count: 14,
+        primary_location: { source: { display_name: "ACM Computing Surveys" } },
+        authorships: [{ author: { display_name: "David Miller" } }],
+        keywords: [
+          { display_name: "data center", score: 0.95 },
+          { display_name: "cloud computing", score: 0.91 },
+          { display_name: "cooling systems", score: 0.84 },
+        ],
+        concepts: [
+          { display_name: "Data center", score: 0.92, level: 2 },
+          { display_name: "Cloud computing", score: 0.89, level: 2 },
+        ],
+      },
+    ];
+
+    const result = buildNetworkFromOpenAlexWorks("data center", dataCenterMockWorks, 1);
+    expect(result.articles.length).toBe(2);
+    expect(result.articles[0].title).toContain("data centers");
+
+    const dcNode = result.nodes.find((n) => n.id === "data center");
+    expect(dcNode).toBeDefined();
+    expect(dcNode?.occurrences).toBe(2);
+
+    const coolingNode = result.nodes.find((n) => n.id === "cooling system");
+    expect(coolingNode).toBeDefined();
+
+    // Ensure no irrelevant concepts like psychology or thematic analysis appear
+    const labels = result.nodes.map((n) => n.label.toLowerCase());
+    expect(labels).not.toContain("psychology");
+    expect(labels).not.toContain("thematic analysis");
+  });
 });

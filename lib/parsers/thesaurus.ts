@@ -62,7 +62,48 @@ export const CIVIL_SYNONYMS: Record<string, string> = {
   "fea": "fem simulation",
   "sulfate attack": "sulfate resistance",
   "sulphate attack": "sulfate resistance",
+  "data centers": "data center",
+  "data centre": "data center",
+  "data centres": "data center",
+  "data center network": "data center networks",
+  "server farm": "server farms",
+  "cooling systems": "cooling system",
 };
+
+/**
+ * Smart query translator: maps Indonesian academic search queries to high-yield English terms
+ */
+export function translateSearchQuery(query: string): string {
+  if (!query) return "";
+  const lower = query.toLowerCase().trim();
+
+  const translations: Record<string, string> = {
+    "pusat data": "data center",
+    "tanah lempung": "expansive clay soil",
+    "stabilisasi tanah": "soil stabilization",
+    "stabilisasi tanah lempung": "expansive clay soil stabilization lime",
+    "beton geopolimer": "geopolymer concrete",
+    "beton geopolimer fly ash": "geopolymer concrete fly ash",
+    "kuat lentur": "flexural capacity",
+    "kuat tekan": "compressive capacity",
+    "kuat lentur balok": "reinforced concrete beam flexural capacity",
+    "balok beton": "reinforced concrete beam",
+    "struktur tahan gempa": "seismic performance concrete structure",
+    "ketahanan sulfat": "concrete sulfate resistance durability",
+    "aspal modifikasi": "polymer modified asphalt",
+    "aspal modifikasi polimer": "polymer modified asphalt pavement durability",
+    "perkerasan kaku": "rigid pavement concrete",
+    "perkerasan lentur": "flexible asphalt pavement",
+  };
+
+  for (const [idTerm, enTerm] of Object.entries(translations)) {
+    if (lower === idTerm) {
+      return enTerm;
+    }
+  }
+
+  return query.trim();
+}
 
 export function normalizeKeyword(raw: string): string {
   if (!raw) return "";

@@ -1,7 +1,7 @@
 import Graph from "graphology";
 import louvain from "graphology-communities-louvain";
 import { VosNode, VosEdge, VosMapResult } from "./vosviewer-parser";
-import { normalizeKeyword, CIVIL_STOP_WORDS } from "./thesaurus";
+import { normalizeKeyword, CIVIL_STOP_WORDS, translateSearchQuery } from "./thesaurus";
 
 export interface DiscoveredArticle {
   id: string;
@@ -55,6 +55,12 @@ const BROAD_DOMAIN_EXCLUDES = new Set([
   "management",
   "sociology",
   "education",
+  "center (category theory)",
+  "category theory",
+  "mains electricity",
+  "state (polity)",
+  "statement (logic)",
+  "relation (database)",
 ]);
 
 interface OpenAlexRawWork {
@@ -85,30 +91,100 @@ interface OpenAlexRawWork {
 }
 
 /**
- * Fetch works from OpenAlex API
+ * Fallback to Europe PMC open API when OpenAlex is temporarily rate-limited
+ */
+export async function fetchEuropePMCWorks(
+  query: string,
+  limit: number = 35
+): Promise<OpenAlexRawWork[]> {
+  try {
+    const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(query)}&format=json&pageSize=${Math.min(limit, 35)}&resultType=core`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen@uny.ac.id)",
+      },
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results: any[] = data.resultList?.result || [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return results.map((item: any) => {
+      const keywords: Array<{ display_name: string }> = [];
+      (item.keywordList?.keyword || []).forEach((kw: string) => {
+        if (kw && typeof kw === "string") {
+          keywords.push({ display_name: kw });
+        }
+      });
+
+      return {
+        id: item.id || crypto.randomUUID(),
+        title: (item.title || "").replace(/<[^>]+>/g, "").replace(/\.$/, "").trim(),
+        publication_year: parseInt(item.pubYear, 10) || new Date().getFullYear(),
+        cited_by_count: item.citedByCount || 0,
+        doi: item.doi,
+        primary_location: {
+          source: { display_name: item.journalTitle || "Peer-Reviewed Journal" },
+        },
+        authorships: (item.authorString || "")
+          .split(", ")
+          .filter(Boolean)
+          .map((name: string) => ({
+            author: { display_name: name },
+          })),
+        concepts: [],
+        keywords,
+      };
+    });
+  } catch (err) {
+    console.warn("Europe PMC fallback fetch failed:", err);
+    return [];
+  }
+}
+
+/**
+ * Fetch works from OpenAlex API with relevance ranking (no sort=cited_by_count override)
+ * and seamless fallback to Europe PMC
  */
 export async function fetchOpenAlexWorks(
   query: string,
-  limit: number = 50
+  limit: number = 40
 ): Promise<OpenAlexRawWork[]> {
   const cleanQuery = query.trim();
   if (!cleanQuery) return [];
 
-  const url = `https://api.openalex.org/works?search=${encodeURIComponent(cleanQuery)}&per_page=${Math.min(limit, 50)}&sort=cited_by_count:desc`;
+  const searchQuery = translateSearchQuery(cleanQuery);
 
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen@uny.ac.id)",
-      Accept: "application/json",
-    },
-  });
+  try {
+    // IMPORTANT: DO NOT add &sort=cited_by_count:desc because OpenAlex will discard
+    // BM25 text relevance ranking and return completely unrelated mega-cited papers (e.g. statistics/psychology)!
+    const url = `https://api.openalex.org/works?search=${encodeURIComponent(searchQuery)}&per_page=${Math.min(limit, 50)}&mailto=metopen@uny.ac.id`;
 
-  if (!res.ok) {
-    throw new Error(`OpenAlex API error: ${res.status} ${res.statusText}`);
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen@uny.ac.id)",
+        Accept: "application/json",
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.results) && data.results.length > 0) {
+        return data.results;
+      }
+    }
+
+    // If OpenAlex returned rate-limit (429) or empty results, fallback to Europe PMC
+    console.warn(`OpenAlex returned ${res.status}, falling back to Europe PMC for query: "${searchQuery}"`);
+    return await fetchEuropePMCWorks(searchQuery, limit);
+  } catch (err) {
+    console.warn("OpenAlex fetch error, falling back to Europe PMC:", err);
+    return await fetchEuropePMCWorks(searchQuery, limit);
   }
-
-  const data = await res.json();
-  return data.results || [];
 }
 
 /**
@@ -154,6 +230,26 @@ export function buildNetworkFromOpenAlexWorks(
         rawTerms.push(c.display_name);
       }
     });
+
+    // If keywords/concepts are sparse, extract meaningful technical bigrams from title
+    if (rawTerms.length < 2 && work.title) {
+      const cleanTitle = work.title.toLowerCase().replace(/[^a-z0-9\s-]/g, " ");
+      const qLower = query.toLowerCase().trim();
+      if (qLower.length > 3 && cleanTitle.includes(qLower)) {
+        rawTerms.push(qLower);
+      }
+      const words = cleanTitle.split(/\s+/).filter((w) => w.length > 2);
+      for (let i = 0; i < words.length - 1; i++) {
+        const bigram = `${words[i]} ${words[i + 1]}`;
+        if (
+          !CIVIL_STOP_WORDS.has(words[i]) &&
+          !CIVIL_STOP_WORDS.has(words[i + 1]) &&
+          bigram.length > 5
+        ) {
+          rawTerms.push(bigram);
+        }
+      }
+    }
 
     // Normalize and filter
     const uniqueKwsInPaper = Array.from(
