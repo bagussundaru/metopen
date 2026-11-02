@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Canvas, Reference } from "@/lib/types/canvas";
+import { AiGapModal } from "@/components/ai/AiGapModal";
 import {
   BookOpen,
   Plus,
@@ -107,14 +108,28 @@ export function Step2Background({ canvas, onChange }: Step2BackgroundProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-indigo-600" />
-          Langkah 2: Latar Belakang & Gap Sintesis
-        </h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Dosen mewajibkan narasi gap ditulis secara tajam <strong>maksimal 3 kalimat</strong> (bukan paragraf bebas), didukung minimal 5 referensi terindeks <strong>Scopus / Google Scholar</strong>.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-600" />
+            Langkah 2: Latar Belakang & Gap Sintesis
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Dosen mewajibkan narasi gap ditulis secara tajam <strong>maksimal 3 kalimat</strong> (bukan paragraf bebas), didukung minimal 5 referensi terindeks <strong>Scopus / Google Scholar</strong>.
+          </p>
+        </div>
+        <AiGapModal
+          canvas={canvas}
+          onApplySentences={(newSentences) => {
+            onChange((prev) => ({
+              ...prev,
+              background: {
+                ...prev.background,
+                sentences: newSentences,
+              },
+            }));
+          }}
+        />
       </div>
 
       {/* 3 Sentences Grid (Structured Boxes) */}

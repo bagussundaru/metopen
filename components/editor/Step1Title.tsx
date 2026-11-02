@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Canvas } from "@/lib/types/canvas";
+import { AiTitleModal } from "@/components/ai/AiTitleModal";
 import {
   FileText,
   Lightbulb,
@@ -154,20 +155,39 @@ export function Step1Title({ canvas, onChange }: Step1TitleProps) {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (isManualEdit) {
-                // Reset to auto composed
-                updateTitleField("composed", autoComposed);
-              }
-              setIsManualEdit(!isManualEdit);
-            }}
-            className="inline-flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 hover:underline font-medium"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>{isManualEdit ? "Pakai Susunan Otomatis" : "Edit Judul Manual"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <AiTitleModal
+              canvas={canvas}
+              onApplyTitle={(titleObj) => {
+                onChange((prev) => ({
+                  ...prev,
+                  title: {
+                    ...prev.title,
+                    subject: titleObj.subject,
+                    intervention: titleObj.intervention,
+                    outcome: titleObj.outcome,
+                    context: titleObj.context || prev.title.context,
+                    composed: titleObj.composed,
+                  },
+                }));
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                if (isManualEdit) {
+                  // Reset to auto composed
+                  updateTitleField("composed", autoComposed);
+                }
+                setIsManualEdit(!isManualEdit);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 hover:underline font-medium"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{isManualEdit ? "Pakai Susunan Otomatis" : "Edit Judul Manual"}</span>
+            </button>
+          </div>
         </div>
 
         {isManualEdit ? (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Canvas } from "@/lib/types/canvas";
+import { AiRqModal } from "@/components/ai/AiRqModal";
 import {
   Plus,
   X,
@@ -90,14 +91,35 @@ export function Step3ResearchQuestion({ canvas, onChange }: Step3ResearchQuestio
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-          <Target className="w-5 h-5 text-emerald-600" />
-          Langkah 3: Pertanyaan Riset Utama & Pencegah Novelty Semu
-        </h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Pertanyaan riset harus dapat diuji secara empiris atau numerik dengan indikator terukur, serta terhindar dari <strong>Jebakan Lokasi Baru</strong> dan <strong>Sindrom Perangkat Lunak</strong>.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Target className="w-5 h-5 text-emerald-600" />
+            Langkah 3: Pertanyaan Riset Utama & Pencegah Novelty Semu
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Pertanyaan riset harus dapat diuji secara empiris atau numerik dengan indikator terukur, serta terhindar dari <strong>Jebakan Lokasi Baru</strong> dan <strong>Sindrom Perangkat Lunak</strong>.
+          </p>
+        </div>
+        <AiRqModal
+          canvas={canvas}
+          onApplyRq={(rqData) => {
+            onChange((prev) => ({
+              ...prev,
+              researchQuestion: {
+                ...prev.researchQuestion,
+                main: rqData.main,
+                type: rqData.type,
+                variables: {
+                  ...prev.researchQuestion.variables,
+                  independent: rqData.independent,
+                  dependent: rqData.dependent,
+                },
+                measurableIndicator: rqData.measurableIndicator,
+              },
+            }));
+          }}
+        />
       </div>
 
       {/* Main RQ Input */}

@@ -13,6 +13,7 @@ import { Step5Feasibility } from "@/components/editor/Step5Feasibility";
 import { LiveValidationPanel } from "@/components/editor/LiveValidationPanel";
 import { LiteratureMapTab } from "@/components/editor/LiteratureMapTab";
 import { ExportDialog } from "@/components/export/ExportDialog";
+import { AiStatusBadge } from "@/components/ai/AiStatusBadge";
 import {
   FileText,
   BookOpen,
@@ -128,6 +129,8 @@ export function StepWizard({ canvas }: StepWizardProps) {
             <span>Peta Literatur (VOSviewer / Scopus)</span>
           </button>
         </div>
+
+        <AiStatusBadge />
       </div>
 
       {activeTab === "wizard" ? (

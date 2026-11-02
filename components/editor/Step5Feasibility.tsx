@@ -2,6 +2,7 @@
 
 import { Canvas, RubricKey } from "@/lib/types/canvas";
 import { RubricCalculationResult } from "@/lib/validators/rubric-scorer";
+import { AiReviewSection } from "@/components/ai/AiReviewSection";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -234,6 +235,9 @@ export function Step5Feasibility({ canvas, rubric, onChange }: Step5FeasibilityP
           </p>
         </div>
       </div>
+
+      {/* AI Review Section */}
+      <AiReviewSection canvas={canvas} onChange={onChange} />
 
       {/* 5 Criteria Cards List */}
       <div className="space-y-4">
