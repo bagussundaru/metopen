@@ -8,12 +8,14 @@ import { VosviewerUploader } from "@/components/network/VosviewerUploader";
 import { ScopusUploader } from "@/components/network/ScopusUploader";
 import { KeywordTable } from "@/components/network/KeywordTable";
 import { GapCandidateList } from "@/components/network/GapCandidateList";
+import { LiteratureSearchDirect } from "@/components/network/LiteratureSearchDirect";
 import {
   Network,
   Layers,
   Table,
   Upload,
   FileSpreadsheet,
+  Compass,
 } from "lucide-react";
 
 interface LiteratureMapTabProps {
@@ -22,7 +24,8 @@ interface LiteratureMapTabProps {
 }
 
 export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
-  const [sourceMode, setSourceMode] = useState<"vosviewer" | "scopus">("vosviewer");
+  // Default to "search" so user directly searches and generates VOSviewer map without uploading!
+  const [sourceMode, setSourceMode] = useState<"search" | "vosviewer" | "scopus">("search");
   const [viewMode, setViewMode] = useState<"network" | "overlay" | "table">("network");
   const [mapResult, setMapResult] = useState<VosMapResult | null>(null);
 
@@ -113,21 +116,35 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
       <div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
           <Network className="w-5 h-5 text-blue-600" />
-          Peta Literatur Bibliometrik (VOSviewer & Scopus CSV)
+          Peta Literatur Bibliometrik (Pencarian VOSviewer & Scopus)
         </h2>
         <p className="text-xs text-slate-500 mt-1">
-          Visualisasikan jejaring kata kunci penelitian dari Scopus/Google Scholar untuk memperkuat <strong>kebaruan (novelty)</strong> dan <strong>sintesis research gap</strong> Anda secara objektif.
+          Ketik tema riset Anda untuk langsung menambang artikel ilmiah dan menampilkan peta jejaring VOSviewer secara otomatis, atau unggah berkas manual.
         </p>
       </div>
 
-      {/* Source Mode Switcher: VOSviewer vs Scopus */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit text-xs font-semibold">
+      {/* 3 Source Modes Switcher: Direct Search vs Upload VOSviewer vs Upload Scopus */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit text-xs font-semibold">
         <button
+          type="button"
+          onClick={() => setSourceMode("search")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all ${
+            sourceMode === "search"
+              ? "bg-blue-600 text-white shadow-sm font-bold"
+              : "text-slate-600 hover:text-slate-900 dark:text-slate-300"
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          <span>🔍 Cari Tema (Otomatis VOSviewer)</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setSourceMode("vosviewer")}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
             sourceMode === "vosviewer"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-300 shadow-sm"
-              : "text-slate-500 hover:text-slate-800"
+              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-300 shadow-sm font-bold"
+              : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
           }`}
         >
           <Upload className="w-3.5 h-3.5" />
@@ -135,11 +152,12 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
         </button>
 
         <button
+          type="button"
           onClick={() => setSourceMode("scopus")}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
             sourceMode === "scopus"
-              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-300 shadow-sm"
-              : "text-slate-500 hover:text-slate-800"
+              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-300 shadow-sm font-bold"
+              : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
           }`}
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -147,98 +165,164 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
         </button>
       </div>
 
-      {/* Uploaders */}
-      {sourceMode === "vosviewer" ? (
-        <VosviewerUploader onMapLoaded={handleMapLoaded} />
-      ) : (
-        <ScopusUploader
-          onGraphGenerated={handleGraphGenerated}
-          onImportReferencesToCanvas={handleImportReferences}
+      {/* Mode 1: DIRECT SEARCH (NO UPLOAD NEEDED) */}
+      {sourceMode === "search" && (
+        <LiteratureSearchDirect
+          canvas={canvas}
+          onChange={onChange}
+          onPinFinding={handlePinFinding}
+          onUnpinFinding={handleUnpinFinding}
+          onTakeSnapshot={handleTakeSnapshot}
         />
       )}
 
-      {/* Visualization Canvas & Controls */}
-      {mapResult ? (
-        <div className="space-y-4">
-          {/* View Mode Switcher (Network vs Overlay vs Table) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-2 text-xs font-bold">
-              <span className="text-slate-500 text-[11px] mr-1">Tampilan Peta:</span>
-              <button
-                onClick={() => setViewMode("network")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
-                  viewMode === "network"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <Network className="w-3.5 h-3.5" />
-                <span>Klaster Topik (Network View)</span>
-              </button>
+      {/* Mode 2: UPLOAD VOSVIEWER */}
+      {sourceMode === "vosviewer" && (
+        <>
+          <VosviewerUploader onMapLoaded={handleMapLoaded} />
+          {mapResult && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="text-slate-500 text-[11px] mr-1">Tampilan Peta:</span>
+                  <button
+                    onClick={() => setViewMode("network")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "network"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Network className="w-3.5 h-3.5" />
+                    <span>Klaster Topik</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("overlay")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "overlay"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Tahun Terbit</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("table")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "table"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Table className="w-3.5 h-3.5" />
+                    <span>Tabel Kata Kunci</span>
+                  </button>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {mapResult.nodes.length} kata kunci &bull; {mapResult.edges.length} relasi tautan
+                </div>
+              </div>
 
-              <button
-                onClick={() => setViewMode("overlay")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
-                  viewMode === "overlay"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Tahun Terbit (Overlay View)</span>
-              </button>
+              {viewMode === "table" ? (
+                <KeywordTable nodes={mapResult.nodes} />
+              ) : (
+                <CytoscapeGraph
+                  nodes={mapResult.nodes}
+                  edges={mapResult.edges}
+                  viewMode={viewMode}
+                  minYear={mapResult.minYear}
+                  maxYear={mapResult.maxYear}
+                  onTakeSnapshot={handleTakeSnapshot}
+                />
+              )}
 
-              <button
-                onClick={() => setViewMode("table")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
-                  viewMode === "table"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <Table className="w-3.5 h-3.5" />
-                <span>Tabel Kata Kunci</span>
-              </button>
+              <GapCandidateList
+                nodes={mapResult.nodes}
+                edges={mapResult.edges}
+                canvas={canvas}
+                onPinFinding={handlePinFinding}
+                onUnpinFinding={handleUnpinFinding}
+              />
             </div>
-
-            <div className="text-[11px] text-slate-400">
-              {mapResult.nodes.length} kata kunci &bull; {mapResult.edges.length} relasi tautan
-            </div>
-          </div>
-
-          {/* Render Graph or Table */}
-          {viewMode === "table" ? (
-            <KeywordTable nodes={mapResult.nodes} />
-          ) : (
-            <CytoscapeGraph
-              nodes={mapResult.nodes}
-              edges={mapResult.edges}
-              viewMode={viewMode}
-              minYear={mapResult.minYear}
-              maxYear={mapResult.maxYear}
-              onTakeSnapshot={handleTakeSnapshot}
-            />
           )}
+        </>
+      )}
 
-          {/* Gap Candidates & Pin Section */}
-          <GapCandidateList
-            nodes={mapResult.nodes}
-            edges={mapResult.edges}
-            canvas={canvas}
-            onPinFinding={handlePinFinding}
-            onUnpinFinding={handleUnpinFinding}
+      {/* Mode 3: UPLOAD SCOPUS CSV */}
+      {sourceMode === "scopus" && (
+        <>
+          <ScopusUploader
+            onGraphGenerated={handleGraphGenerated}
+            onImportReferencesToCanvas={handleImportReferences}
           />
-        </div>
-      ) : (
-        <div className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/50 space-y-2">
-          <Network className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
-            Peta Literatur Belum Dimuat
-          </h4>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Unggah berkas VOSviewer di atas, impor CSV Scopus, atau klik tombol <em>&quot;Muat Sampel&quot;</em> untuk langsung menjelajahi peta literatur.
-          </p>
-        </div>
+          {mapResult && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="text-slate-500 text-[11px] mr-1">Tampilan Peta:</span>
+                  <button
+                    onClick={() => setViewMode("network")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "network"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Network className="w-3.5 h-3.5" />
+                    <span>Klaster Topik</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("overlay")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "overlay"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Tahun Terbit</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("table")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "table"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Table className="w-3.5 h-3.5" />
+                    <span>Tabel Kata Kunci</span>
+                  </button>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {mapResult.nodes.length} kata kunci &bull; {mapResult.edges.length} relasi tautan
+                </div>
+              </div>
+
+              {viewMode === "table" ? (
+                <KeywordTable nodes={mapResult.nodes} />
+              ) : (
+                <CytoscapeGraph
+                  nodes={mapResult.nodes}
+                  edges={mapResult.edges}
+                  viewMode={viewMode}
+                  minYear={mapResult.minYear}
+                  maxYear={mapResult.maxYear}
+                  onTakeSnapshot={handleTakeSnapshot}
+                />
+              )}
+
+              <GapCandidateList
+                nodes={mapResult.nodes}
+                edges={mapResult.edges}
+                canvas={canvas}
+                onPinFinding={handlePinFinding}
+                onUnpinFinding={handleUnpinFinding}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

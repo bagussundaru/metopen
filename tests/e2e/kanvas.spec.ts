@@ -49,9 +49,11 @@ test.describe("Kanvas Topik Tesis - UAT Skenario Tugas Dosen UNY", () => {
 
     // 10. Uji Tab Peta Literatur (VOSviewer / Scopus)
     await page.locator('button:has-text("Peta Literatur (VOSviewer / Scopus)")').click();
-    await expect(page.locator("text=Peta Literatur Bibliometrik (VOSviewer & Scopus CSV)")).toBeVisible();
+    await expect(page.locator("text=Peta Literatur Bibliometrik (Pencarian VOSviewer & Scopus)")).toBeVisible();
+    await expect(page.locator('button:has-text("Cari & Tampilkan Peta VOSviewer")')).toBeVisible();
     
-    // Muat Sampel VOSviewer
+    // Uji Mode Berkas VOSviewer
+    await page.locator('button:has-text("Unggah Berkas VOSviewer (.map & .net)")').click();
     await page.locator('button:has-text("Muat Sampel VOSviewer Sipil")').click();
     await expect(page.locator("text=8 kata kunci • 11 relasi tautan")).toBeVisible();
     await expect(page.locator("text=Analisis Kandidat Research Gap")).toBeVisible();
