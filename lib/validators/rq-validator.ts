@@ -73,7 +73,7 @@ export function validateResearchQuestion(rq: Partial<Canvas["researchQuestion"]>
   }
 
   // Rule 6: Software Syndrome Detector ("Sindrom Perangkat Lunak")
-  const softwareRegex = /\b(menggunakan\s+software|berbasis\s+aplikasi|sistem\s+informasi|dengan\s+(?:sap2000|etabs|plaxis|abaqus|ansys|python|autocad|revit|midas))\b/i;
+  const softwareRegex = /(?:menggunakan|dengan|memakai|berbasis)\s+(?:software|program|aplikasi|perangkat\s+lunak)|\b(?:sap2000|etabs|plaxis|abaqus|ansys|midas|revit)\b/i;
   if (softwareRegex.test(mainRq)) {
     issues.push({
       id: "rq-software-syndrome",
