@@ -171,7 +171,7 @@ function PrintContent({ params }: PrintPageProps) {
         </div>
 
         {/* 5. Validasi Kelayakan */}
-        <div className="avoid-break">
+        <div className="avoid-break mb-6">
           <h2 className="text-xs font-bold uppercase tracking-wider text-blue-900 border-b border-blue-200 pb-1 mb-2">
             5. Evaluasi Kelayakan & Rubrik Akademik
           </h2>
@@ -189,6 +189,44 @@ function PrintContent({ params }: PrintPageProps) {
             </div>
           </div>
         </div>
+
+        {/* 6. Lampiran: Protokol Bibliometrik (jika ada) */}
+        {canvas.literatureMap && canvas.literatureMap.nodeCount > 0 && (
+          <div className="avoid-break">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-blue-900 border-b border-blue-200 pb-1 mb-2">
+              Lampiran: Protokol Metode Analisis Bibliometrik (VOSviewer & Scopus)
+            </h2>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <strong>Kueri Boolean:</strong> <code className="font-mono text-[10px]">{canvas.literatureMap.booleanQuery || canvas.literatureMap.searchQuery || canvas.title.subject}</code>
+                </div>
+                <div>
+                  <strong>Basis Data:</strong> Scopus, OpenAlex, CrossRef, Europe PMC, Google Scholar
+                </div>
+                <div>
+                  <strong>Statistik Ekstraksi:</strong> {canvas.literatureMap.nodeCount} kata kunci &bull; {canvas.literatureMap.edgeCount} relasi tautan
+                </div>
+                <div>
+                  <strong>Metode Normalisasi:</strong> Association Strength (Van Eck &amp; Waltman, 2010) &amp; Louvain
+                </div>
+              </div>
+
+              {canvas.literatureMap.pinnedFindings && canvas.literatureMap.pinnedFindings.length > 0 && (
+                <div className="pt-2 border-t border-slate-200">
+                  <p className="font-bold text-[11px] text-slate-700 mb-1">Temuan Kunci Celah Riset (Research Gap Pinned):</p>
+                  <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-600">
+                    {canvas.literatureMap.pinnedFindings.map((f) => (
+                      <li key={f.id}>
+                        <strong>[{f.type.toUpperCase()}] {f.label}:</strong> {f.description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

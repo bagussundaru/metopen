@@ -7,6 +7,7 @@ import { DiscoveredArticle } from "@/lib/parsers/openalex-parser";
 import { CytoscapeGraph } from "./CytoscapeGraph";
 import { KeywordTable } from "./KeywordTable";
 import { GapCandidateList } from "./GapCandidateList";
+import { BibliometricMethodologyPanel } from "./BibliometricMethodologyPanel";
 import { exportToVosviewerFormat } from "@/lib/parsers/vosviewer-parser";
 import {
   Search,
@@ -31,8 +32,9 @@ interface LiteratureSearchDirectProps {
 
 const CIVIL_PRESETS = [
   { label: "K3 ∩ Data Center", query: "K3 Data Center" },
-  { label: "K3 ∩ Proyek Konstruksi", query: "K3 Proyek Konstruksi" },
   { label: "Beton Geopolimer ∩ Fly Ash", query: "Beton Geopolimer Fly Ash" },
+  { label: "Bibliometric ∩ Fly Ash Geopolymer", query: "Bibliometric Fly Ash Geopolymer" },
+  { label: "K3 ∩ Proyek Konstruksi", query: "K3 Proyek Konstruksi" },
   { label: "Kuat Lentur ∩ Balok Beton", query: "Kuat Lentur Balok Beton" },
   { label: "Stabilisasi Tanah ∩ Lempung", query: "Stabilisasi Tanah Lempung" },
   { label: "Aspal Modifikasi ∩ Polimer", query: "Aspal Modifikasi Polimer" },
@@ -63,9 +65,11 @@ export function LiteratureSearchDirect({
   const [articles, setArticles] = useState<DiscoveredArticle[]>([]);
   const [minYear, setMinYear] = useState(2018);
   const [maxYear, setMaxYear] = useState(2025);
-  const [viewMode, setViewMode] = useState<"network" | "overlay" | "table" | "articles">("network");
+  const [viewMode, setViewMode] = useState<"network" | "overlay" | "table" | "articles" | "methodology">("network");
   const [selectedNode, setSelectedNode] = useState<VosNode | null>(null);
   const [transferredIds, setTransferredIds] = useState<Set<string>>(new Set());
+  const [articleFilter, setArticleFilter] = useState<"all" | "review" | "primary">("all");
+  const [selectedKeywordFilter, setSelectedKeywordFilter] = useState<string | null>(null);
 
   const handleInsertOperator = (op: string) => {
     setQuery((prev) => `${prev.trim()}${op}`);
@@ -396,26 +400,37 @@ export function LiteratureSearchDirect({
               </div>
 
               {currentBooleanQuery && (
-                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-blue-100 dark:border-slate-800">
-                  <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-bold text-[10px] tracking-wide">
-                    LOGIKA BOOLEAN
-                  </span>
-                  {currentFacets.length > 1 && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-slate-500 text-[10px]">Irisan Konsep:</span>
-                      {currentFacets.map((facet, idx) => (
-                        <span
-                          key={facet}
-                          className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-[10px] text-blue-700 dark:text-blue-300"
-                        >
-                          {facet} {idx < currentFacets.length - 1 ? "∩" : ""}
-                        </span>
-                      ))}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-blue-100 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-bold text-[10px] tracking-wide">
+                      LOGIKA BOOLEAN
+                    </span>
+                    {currentFacets.length > 1 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500 text-[10px]">Irisan Konsep:</span>
+                        {currentFacets.map((facet, idx) => (
+                          <span
+                            key={facet}
+                            className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-[10px] text-blue-700 dark:text-blue-300"
+                          >
+                            {facet} {idx < currentFacets.length - 1 ? "∩" : ""}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-[11px] text-slate-500 font-mono truncate max-w-full" title={currentBooleanQuery}>
+                      Query: <code className="text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">{currentBooleanQuery}</code>
                     </div>
-                  )}
-                  <div className="text-[11px] text-slate-500 font-mono truncate max-w-full" title={currentBooleanQuery}>
-                    Query: <code className="text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">{currentBooleanQuery}</code>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("methodology")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Lihat Metode Bibliometrik &amp; Draf Bab 3</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -468,6 +483,18 @@ export function LiteratureSearchDirect({
                 }`}
               >
                 Artikel Ilmiah ({articles.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("methodology")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  viewMode === "methodology"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>📘 Metode Bibliometrik (Bab 3)</span>
               </button>
 
               {selectedNode && (
@@ -532,86 +559,229 @@ export function LiteratureSearchDirect({
           )}
 
           {/* Articles View */}
-          {viewMode === "articles" && (
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                    {articles.length} Artikel Ilmiah Ditemukan untuk Tema &quot;{query}&quot;
-                  </h4>
-                  <p className="text-xs text-slate-400">
-                    Terindeks di repositori global (Scopus, Crossref, Google Scholar)
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleTransferTopArticles}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Transfer 5 Teratas ke Kanvas</span>
-                </button>
-              </div>
+          {viewMode === "articles" && (() => {
+            const isReviewArticle = (art: DiscoveredArticle) =>
+              /review|bibliometric|scientometric|systematic|meta-analysis/i.test(art.title);
 
-              <div className="space-y-3">
-                {articles.map((art) => {
-                  const isTransferred = transferredIds.has(art.id);
-                  return (
-                    <div
-                      key={art.id}
-                      className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2 hover:border-blue-400 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
-                            {art.title}
-                          </h5>
-                          <p className="text-xs text-slate-500">
-                            {art.authors} ({art.year}) &bull; <span className="italic">{art.journal}</span> &bull; {art.citedByCount} sitasi
-                          </p>
-                        </div>
+            const reviewArticles = articles.filter(isReviewArticle);
+            const primaryArticles = articles.filter((a) => !isReviewArticle(a));
 
-                        <button
-                          type="button"
-                          onClick={() => handleTransferArticle(art)}
-                          disabled={isTransferred}
-                          className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                            isTransferred
-                              ? "bg-slate-100 text-slate-400 cursor-default"
-                              : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer"
-                          }`}
-                        >
-                          {isTransferred ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Ditambahkan</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Tambah ke Kanvas</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
+            const filteredArticles = articles.filter((art) => {
+              if (articleFilter === "review" && !isReviewArticle(art)) return false;
+              if (articleFilter === "primary" && isReviewArticle(art)) return false;
+              if (selectedKeywordFilter) {
+                const match = art.keywords.some((k) => k.toLowerCase() === selectedKeywordFilter.toLowerCase());
+                if (!match) return false;
+              }
+              return true;
+            });
 
-                      {art.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {art.keywords.map((kw, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600"
-                            >
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
+            const topFacets = nodes.slice(0, 8);
+
+            return (
+              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>{filteredArticles.length} dari {articles.length} Artikel Ilmiah</span>
+                      {selectedKeywordFilter && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-semibold">
+                          Filter: {selectedKeywordFilter}
+                        </span>
                       )}
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Terindeks di Scopus, CrossRef, Europe PMC &amp; Google Scholar
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedKeywordFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedKeywordFilter(null)}
+                        className="px-2.5 py-1 rounded-xl text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                      >
+                        Reset Filter
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleTransferTopArticles}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Transfer 5 Teratas ke Kanvas</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scopus-style Filter Tabs: All vs Bibliometric Reviews vs Primary Research */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 mr-1">Tipe Dokumen (Scopus):</span>
+                  <button
+                    type="button"
+                    onClick={() => setArticleFilter("all")}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                      articleFilter === "all"
+                        ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200"
+                    }`}
+                  >
+                    Semua Dokumen ({articles.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArticleFilter("review")}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      articleFilter === "review"
+                        ? "bg-amber-600 text-white"
+                        : "bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 hover:bg-amber-100"
+                    }`}
+                  >
+                    <span>🔍 Tinjauan Bibliometrik / Review ({reviewArticles.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArticleFilter("primary")}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                      articleFilter === "primary"
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 hover:bg-blue-100"
+                    }`}
+                  >
+                    Artikel Penelitian Primer ({primaryArticles.length})
+                  </button>
+                </div>
+
+                {/* Scopus-style Keyword Facets Pill Row */}
+                {topFacets.length > 0 && (
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Facet Kata Kunci Scopus (Klik untuk memfilter artikel):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {topFacets.map((f) => {
+                        const isSelected = selectedKeywordFilter?.toLowerCase() === f.label.toLowerCase();
+                        return (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() =>
+                              setSelectedKeywordFilter(isSelected ? null : f.label)
+                            }
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                            }`}
+                          >
+                            {f.label} <strong className="ml-1 opacity-75">({f.occurrences})</strong>
+                          </button>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {filteredArticles.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      Tidak ada artikel yang cocok dengan filter yang dipilih.
+                    </div>
+                  ) : (
+                    filteredArticles.map((art) => {
+                      const isTransferred = transferredIds.has(art.id);
+                      const isReview = isReviewArticle(art);
+                      return (
+                        <div
+                          key={art.id}
+                          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2 hover:border-blue-400 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1.5">
+                              {/* Scopus metadata tags: Review, Open Access */}
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {isReview && (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300">
+                                    Review / Bibliometric
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                                  Open Access
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-medium">
+                                  Tahun: {art.year}
+                                </span>
+                              </div>
+
+                              <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
+                                {art.title}
+                              </h5>
+                              <p className="text-xs text-slate-500">
+                                {art.authors} &bull; <span className="italic">{art.journal}</span> &bull; <strong>{art.citedByCount}</strong> sitasi
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleTransferArticle(art)}
+                              disabled={isTransferred}
+                              className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                isTransferred
+                                  ? "bg-slate-100 text-slate-400 cursor-default"
+                                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer"
+                              }`}
+                            >
+                              {isTransferred ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Ditambahkan</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>Tambah ke Kanvas</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {art.keywords.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {art.keywords.map((kw, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setSelectedKeywordFilter(kw)}
+                                  className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:border-blue-400 cursor-pointer"
+                                >
+                                  {kw}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
+            );
+          })()}
+
+          {/* Bibliometric Methodology View */}
+          {viewMode === "methodology" && (
+            <BibliometricMethodologyPanel
+              canvas={canvas}
+              query={activeSearchedTopic || query}
+              booleanQuery={currentBooleanQuery}
+              nodes={nodes}
+              edges={edges}
+              articles={articles}
+              minYear={minYear}
+              maxYear={maxYear}
+              onChange={onChange}
+            />
           )}
 
           {/* Research Gap Candidates Analysis */}

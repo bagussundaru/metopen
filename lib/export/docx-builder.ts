@@ -327,6 +327,56 @@ export async function generateDocxBlob(canvas: Canvas, rubric: RubricCalculation
             ],
             spacing: { after: 200 },
           }),
+
+          ...(canvas.literatureMap && canvas.literatureMap.nodeCount > 0
+            ? [
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_2,
+                  children: [
+                    new TextRun({
+                      text: "LAMPIRAN: PROTOKOL METODE ANALISIS BIBLIOMETRIK",
+                      bold: true,
+                      size: 22,
+                      color: "1E3A8A",
+                    }),
+                  ],
+                  spacing: { before: 200, after: 100 },
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: "• Topik / Kueri Boolean: ", bold: true }),
+                    new TextRun(canvas.literatureMap.booleanQuery || canvas.literatureMap.searchQuery || canvas.title.subject || "-"),
+                    new TextRun({ text: "\n• Basis Data Sumber: ", bold: true }),
+                    new TextRun("Scopus, OpenAlex, CrossRef, Europe PMC, Google Scholar"),
+                    new TextRun({ text: "\n• Jumlah Kata Kunci & Relasi: ", bold: true }),
+                    new TextRun(`${canvas.literatureMap.nodeCount} node kata kunci, ${canvas.literatureMap.edgeCount} link ko-kejadian`),
+                    new TextRun({ text: "\n• Algoritma: ", bold: true }),
+                    new TextRun("Association Strength Normalization (Van Eck & Waltman, 2010) & Louvain Community Detection"),
+                  ],
+                  spacing: { after: 150 },
+                }),
+                ...(canvas.literatureMap.pinnedFindings && canvas.literatureMap.pinnedFindings.length > 0
+                  ? [
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: "Temuan Kunci Celah Riset (Research Gap Pinned):", bold: true }),
+                        ],
+                        spacing: { after: 50 },
+                      }),
+                      ...canvas.literatureMap.pinnedFindings.map(
+                        (f) =>
+                          new Paragraph({
+                            children: [
+                              new TextRun({ text: `• [${f.type.toUpperCase()}] ${f.label}: `, bold: true }),
+                              new TextRun(f.description),
+                            ],
+                            spacing: { after: 50 },
+                          })
+                      ),
+                    ]
+                  : []),
+              ]
+            : []),
         ],
       },
     ],

@@ -16,6 +16,10 @@ interface Step4MethodDataProps {
 }
 
 const CIVIL_TOOLS_PRESETS = [
+  "VOSviewer 1.6.20 (Visualisasi Jejaring Bibliometrik)",
+  "Graphology Louvain Clustering Engine",
+  "Bibliometrix R Package / BiblioShiny",
+  "Basis Data Scopus / OpenAlex API",
   "Universal Testing Machine (UTM) 500 kN",
   "LVDT Displacement Transducer",
   "Compression Machine 2000 kN",
@@ -35,6 +39,9 @@ const CIVIL_TOOLS_PRESETS = [
 ];
 
 const CIVIL_STANDARDS_PRESETS = [
+  "PRISMA 2020 Statement (Pedoman Systematic Review & Bibliometrik)",
+  "Pedoman Analisis Bibliometrik Donthu et al. (2021, JBR)",
+  "Van Eck & Waltman (2010, Scientometrics) - Algoritma VOS",
   "SNI 2847:2019 (Persyaratan Beton Struktural)",
   "SNI 1726:2019 (Tata Cara Perencanaan Ketahanan Gempa Gedung)",
   "SNI 1727:2020 (Beban Desain Minimum untuk Gedung)",
@@ -157,12 +164,27 @@ export function Step4MethodData({ canvas, onChange }: Step4MethodDataProps) {
             <option value="field_study">Studi Lapangan / Pengujian In-Situ</option>
             <option value="numerical_fem">Simulasi Elemen Hingga (FEM) / Komputasi</option>
             <option value="simulation">Pemodelan Sistem & Simulasi Dinamis</option>
+            <option value="bibliometric_slr">Analisis Bibliometrik & Systematic Literature Review (SLR)</option>
             <option value="mixed">Metode Campuran (Eksperimen Lab + Validasi FEM)</option>
             <option value="statistical_modeling">Pemodelan Statistik & Reliabilitas</option>
             <option value="ml_data_driven">Machine Learning / Data-Driven</option>
             <option value="other">Pendekatan Lainnya</option>
           </select>
         </div>
+
+        {canvas.literatureMap && canvas.literatureMap.nodeCount > 0 && (
+          <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-200">
+              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+              <span>
+                <strong>Peta Bibliometrik Terdeteksi:</strong> {canvas.literatureMap.nodeCount} kata kunci teranalisis dari topik &quot;{canvas.literatureMap.searchQuery || canvas.title.subject}&quot;.
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+              Terintegrasi dengan Tab Peta Literatur
+            </span>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1.5">

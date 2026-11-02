@@ -97,6 +97,27 @@ ${canvas.method.dataNeeds.length === 0 ? "| - | - | - | - | - | - |" : canvas.me
 ### Catatan Asistensi Dosen Pembimbing:
 _${canvas.feasibility.notes || "Belum ada catatan khusus."}_
 
+${
+  canvas.literatureMap && canvas.literatureMap.nodeCount > 0
+    ? `---
+
+## LAMPIRAN: PROTOKOL METODE ANALISIS BIBLIOMETRIK
+- **Topik / Kueri Boolean:** \`${canvas.literatureMap.booleanQuery || canvas.literatureMap.searchQuery || canvas.title.subject || "-"}\`
+- **Basis Data Sumber:** Scopus, OpenAlex, CrossRef, Europe PMC, Google Scholar
+- **Jumlah Kata Kunci & Relasi:** ${canvas.literatureMap.nodeCount} node kata kunci, ${canvas.literatureMap.edgeCount} link ko-kejadian
+- **Rentang Tahun:** ${canvas.literatureMap.minYear || 2018} - ${canvas.literatureMap.maxYear || 2026}
+- **Metode Normalisasi:** Association Strength Normalization (Van Eck & Waltman, 2010)
+- **Algoritma Klaster:** Louvain Modularity Optimization
+
+${
+  canvas.literatureMap.pinnedFindings && canvas.literatureMap.pinnedFindings.length > 0
+    ? `### Temuan Kunci Celah Riset (Research Gap Tersemat):
+${canvas.literatureMap.pinnedFindings.map((f) => `- **[${f.type.toUpperCase()}] ${f.label}:** ${f.description}`).join("\n")}`
+    : ""
+}`
+    : ""
+}
+
 ---
 *Dihasilkan secara otomatis oleh Aplikasi Kanvas Tesis S2 Rekayasa (Acuan UNY & Scopus)*
 `;

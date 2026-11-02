@@ -9,6 +9,7 @@ import { ScopusUploader } from "@/components/network/ScopusUploader";
 import { KeywordTable } from "@/components/network/KeywordTable";
 import { GapCandidateList } from "@/components/network/GapCandidateList";
 import { LiteratureSearchDirect } from "@/components/network/LiteratureSearchDirect";
+import { BibliometricMethodologyPanel } from "@/components/network/BibliometricMethodologyPanel";
 import {
   Network,
   Layers,
@@ -16,6 +17,7 @@ import {
   Upload,
   FileSpreadsheet,
   Compass,
+  BookOpen,
 } from "lucide-react";
 
 interface LiteratureMapTabProps {
@@ -26,7 +28,7 @@ interface LiteratureMapTabProps {
 export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
   // Default to "search" so user directly searches and generates VOSviewer map without uploading!
   const [sourceMode, setSourceMode] = useState<"search" | "vosviewer" | "scopus">("search");
-  const [viewMode, setViewMode] = useState<"network" | "overlay" | "table">("network");
+  const [viewMode, setViewMode] = useState<"network" | "overlay" | "table" | "methodology">("network");
   const [mapResult, setMapResult] = useState<VosMapResult | null>(null);
 
   const handleMapLoaded = (result: VosMapResult) => {
@@ -218,13 +220,36 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
                     <Table className="w-3.5 h-3.5" />
                     <span>Tabel Kata Kunci</span>
                   </button>
+                  <button
+                    onClick={() => setViewMode("methodology")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "methodology"
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800"
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Metode Bibliometrik (Bab 3)</span>
+                  </button>
                 </div>
                 <div className="text-[11px] text-slate-400">
                   {mapResult.nodes.length} kata kunci &bull; {mapResult.edges.length} relasi tautan
                 </div>
               </div>
 
-              {viewMode === "table" ? (
+              {viewMode === "methodology" ? (
+                <BibliometricMethodologyPanel
+                  canvas={canvas}
+                  query={canvas.title.subject || "Analisis Bibliometrik VOSviewer"}
+                  booleanQuery=""
+                  nodes={mapResult.nodes}
+                  edges={mapResult.edges}
+                  articles={[]}
+                  minYear={mapResult.minYear}
+                  maxYear={mapResult.maxYear}
+                  onChange={onChange}
+                />
+              ) : viewMode === "table" ? (
                 <KeywordTable nodes={mapResult.nodes} />
               ) : (
                 <CytoscapeGraph
@@ -294,13 +319,36 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
                     <Table className="w-3.5 h-3.5" />
                     <span>Tabel Kata Kunci</span>
                   </button>
+                  <button
+                    onClick={() => setViewMode("methodology")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                      viewMode === "methodology"
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800"
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Metode Bibliometrik (Bab 3)</span>
+                  </button>
                 </div>
                 <div className="text-[11px] text-slate-400">
                   {mapResult.nodes.length} kata kunci &bull; {mapResult.edges.length} relasi tautan
                 </div>
               </div>
 
-              {viewMode === "table" ? (
+              {viewMode === "methodology" ? (
+                <BibliometricMethodologyPanel
+                  canvas={canvas}
+                  query={canvas.title.subject || "Analisis Bibliometrik VOSviewer"}
+                  booleanQuery=""
+                  nodes={mapResult.nodes}
+                  edges={mapResult.edges}
+                  articles={[]}
+                  minYear={mapResult.minYear}
+                  maxYear={mapResult.maxYear}
+                  onChange={onChange}
+                />
+              ) : viewMode === "table" ? (
                 <KeywordTable nodes={mapResult.nodes} />
               ) : (
                 <CytoscapeGraph

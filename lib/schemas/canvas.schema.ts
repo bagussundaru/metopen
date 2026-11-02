@@ -48,6 +48,10 @@ export const LiteratureMapSchema = z.object({
   edgeCount: z.number().default(0),
   pinnedFindings: z.array(PinnedFindingSchema).default([]),
   snapshotImage: z.string().optional(),
+  searchQuery: z.string().optional(),
+  booleanQuery: z.string().optional(),
+  minYear: z.number().optional(),
+  maxYear: z.number().optional(),
 });
 
 export const AiReviewSchema = z.object({
@@ -119,6 +123,7 @@ export const CanvasSchema = z.object({
       "simulation",
       "statistical_modeling",
       "ml_data_driven",
+      "bibliometric_slr",
       "mixed",
       "other",
     ]).default("experimental_lab"),
