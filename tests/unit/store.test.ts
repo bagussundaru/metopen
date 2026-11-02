@@ -23,7 +23,7 @@ describe("Canvas Schema & Store", () => {
     const result = CanvasSchema.safeParse(exampleCanvas);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.meta.institution).toBe("Universitas Negeri Yogyakarta");
+      expect(result.data.meta.institution).toBe("Program Pascasarjana Magister");
       expect(result.data.background.references.length).toBeGreaterThanOrEqual(5);
       expect(result.data.title.subject).toContain("balok beton");
     }

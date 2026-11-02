@@ -21,7 +21,7 @@ export function Navbar() {
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-              Metodologi Penelitian & Seminar Proposal (Acuan UNY & Scopus)
+              Metodologi Penelitian & Seminar Proposal (Standar Pascasarjana & Scopus)
             </p>
           </div>
         </Link>

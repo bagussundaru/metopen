@@ -51,7 +51,7 @@ export default function HomePage() {
           <div className="relative z-10 max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/20 text-xs font-medium mb-4 text-blue-100">
               <GraduationCap className="w-4 h-4 text-amber-300" />
-              <span>Standar Pascasarjana UNY &bull; Scopus & Google Scholar Ready</span>
+              <span>Standar Pascasarjana &bull; Scopus & Google Scholar Ready</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-3">
               Susun & Validasi Kanvas Topik Tesis Anda Secara Ilmiah
@@ -74,7 +74,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 text-white border border-white/20 font-semibold text-xs sm:text-sm backdrop-blur transition-all active:scale-95"
               >
                 <Lightbulb className="w-4 h-4 text-amber-300" />
-                <span>Muat Contoh Tesis UNY (Teknik Sipil)</span>
+                <span>Muat Contoh Tesis (Teknik Sipil)</span>
               </button>
 
               <button
@@ -176,7 +176,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium transition-colors"
                 >
                   <Lightbulb className="w-4 h-4 text-amber-500" />
-                  <span>Muat Contoh UNY</span>
+                  <span>Muat Contoh Tesis</span>
                 </button>
               </div>
             </div>

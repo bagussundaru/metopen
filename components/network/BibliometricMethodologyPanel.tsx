@@ -163,7 +163,7 @@ export function BibliometricMethodologyPanel({
     });
   }, [clusterMap, minYear, maxYear]);
 
-  // Academic narrative text for Bab 3 Metodologi Penelitian (UNY Thesis standard, citing Donthu 2021 & Öztürk 2024)
+  // Academic narrative text for Bab 3 Metodologi Penelitian (Postgraduate Thesis standard, citing Donthu 2021 & Öztürk 2024)
   const effectiveBoolean = booleanQuery || query;
   const currentSubject = canvas.title.subject || query;
   const currentIntervention = canvas.title.intervention || "";
@@ -260,7 +260,7 @@ Daftar Pustaka Rujukan Metodologi:
         id: crypto.randomUUID(),
         name: `Dataset Metadata Bibliometrik Scopus & OpenAlex (${query})`,
         kind: "secondary",
-        source: "Basis Data Scopus, OpenAlex, dan CrossRef via API Metopen UNY",
+        source: "Basis Data Scopus, OpenAlex, dan CrossRef via API Metopen Pascasarjana",
         availability: "available",
         accessEvidence: "Akses terbuka dan terintegrasi via API Akademik",
         estimatedSize: `${performanceStats.totalPubs} artikel ilmiah peer-reviewed (${nodes.length} kata kunci)`,
@@ -377,7 +377,7 @@ ${performanceStats.topJournals.map((j) => `- ${j.name}: ${j.count} artikel (${j.
               Kerangka Kerja Donthu et al. (2021) &amp; Öztürk et al. (2024)
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200">
-              Standar Pascasarjana UNY
+              Standar Pascasarjana Magister
             </span>
           </div>
           <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
@@ -833,7 +833,7 @@ ${performanceStats.topJournals.map((j) => `- ${j.name}: ${j.count} artikel (${j.
           <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200">
             <span className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-              Teks di bawah ini telah diselaraskan dengan pedoman penulisan tesis Pascasarjana UNY serta framework Öztürk et al. (2024) dan Donthu et al. (2021).
+              Teks di bawah ini telah diselaraskan dengan pedoman penulisan tesis program pascasarjana serta framework Öztürk et al. (2024) dan Donthu et al. (2021).
             </span>
             <button
               type="button"

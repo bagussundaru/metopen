@@ -1,14 +1,14 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Kanvas Topik Tesis - UAT Skenario Tugas Dosen UNY", () => {
+test.describe("Kanvas Topik Tesis - UAT Skenario Tugas Dosen Pascasarjana", () => {
   test("Alur Lengkap Pembuatan Kanvas Tesis, Validasi Rule-Based, dan Peta Literatur", async ({ page }) => {
     // 1. Kunjungi Beranda
     await page.goto("/");
     await expect(page.locator("text=Susun & Validasi Kanvas Topik Tesis")).toBeVisible();
-    await expect(page.locator("text=Standar Pascasarjana UNY")).toBeVisible();
+    await expect(page.locator("text=Standar Pascasarjana")).toBeVisible();
 
-    // 2. Muat Contoh Draf Kanvas UNY Bawaan
-    await page.locator('button:has-text("Muat Contoh Tesis UNY")').click();
+    // 2. Muat Contoh Draf Kanvas Bawaan
+    await page.locator('button:has-text("Muat Contoh Tesis")').click();
     await page.waitForURL(/\/editor\/.+/);
 
     // 3. Verifikasi Mode Rule-Based Aktif

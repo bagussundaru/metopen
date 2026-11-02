@@ -119,7 +119,7 @@ ${canvas.literatureMap.pinnedFindings.map((f) => `- **[${f.type.toUpperCase()}] 
 }
 
 ---
-*Dihasilkan secara otomatis oleh Aplikasi Kanvas Tesis S2 Rekayasa (Acuan UNY & Scopus)*
+*Dihasilkan secara otomatis oleh Aplikasi Kanvas Tesis S2 Rekayasa (Standar Pascasarjana & Scopus)*
 `;
 
   return md;

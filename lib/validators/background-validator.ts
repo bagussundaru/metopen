@@ -91,7 +91,7 @@ export function validateBackground(background: {
     }
   }
 
-  // Rule 3 & 4: Reference counts and recency (UNY & Scopus standards)
+  // Rule 3 & 4: Reference counts and recency (Postgraduate & Scopus standards)
   const refs = background.references || [];
 
   if (refs.length < 2) {

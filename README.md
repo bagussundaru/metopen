@@ -1,6 +1,6 @@
 # Kanvas Tesis — Platform Penyusunan & Validasi Topik Tesis S2 Rekayasa
 
-Aplikasi web interaktif untuk mahasiswa Magister (S2) Teknik Sipil dan program studi rekayasa lainnya untuk merumuskan, memvalidasi, memetakan literatur, dan mengekspor **Kanvas Topik Tesis** sesuai format tugas Metodologi Penelitian & Seminar Proposal (Acuan Pascasarjana UNY, Scopus, dan Google Scholar via Publish or Perish).
+Aplikasi web interaktif untuk mahasiswa Magister (S2) Teknik Sipil dan program studi rekayasa lainnya untuk merumuskan, memvalidasi, memetakan literatur, dan mengekspor **Kanvas Topik Tesis** sesuai format tugas Metodologi Penelitian & Seminar Proposal (Standar Pascasarjana, Scopus, dan Google Scholar via Publish or Perish).
 
 Aplikasi ini mengusung pendekatan **local-first** (berjalan penuh secara luring via `localStorage`, tanpa perlu registrasi/login backend) dan dilengkapi **Rule-Based Engine deterministik** yang mengevaluasi kelayakan proposal secara objektif, serta **opsional AI Gemini** dengan kebijakan ketat *Strict Zero-Hallucination*.
 
@@ -78,7 +78,7 @@ Aplikasi ini mengusung pendekatan **local-first** (berjalan penuh secara luring 
 ```
 metopen/
 ├── app/
-│   ├── page.tsx                    # Beranda (Daftar Draf, Template UNY, Impor/Ekspor Backup)
+│   ├── page.tsx                    # Beranda (Daftar Draf, Template Rekayasa Sipil, Impor/Ekspor Backup)
 │   ├── layout.tsx                  # Root Layout & Metadata
 │   ├── guide/page.tsx              # Panduan Metodologi & Pencegah Jebakan Novelty
 │   ├── print/[id]/page.tsx         # Tampilan Cetak A4 siap Print-to-PDF
@@ -100,7 +100,7 @@ metopen/
 │   ├── export/                     # DOCX Builder & Markdown Builder
 │   ├── parsers/                    # VOSviewer Parser, Scopus Parser, Thesaurus
 │   ├── schemas/                    # Zod Schemas (Canvas, Literature, AI)
-│   ├── store/                      # Zustand Store (Draf, Template Bawaan UNY)
+│   ├── store/                      # Zustand Store (Draf, Template Bawaan S2)
 │   └── validators/                 # Rule-Based Validation Engine & Deterministic Rubric Scorer
 └── tests/
     ├── e2e/                        # Playwright E2E Tests (Skenario Alur Lengkap & Jebakan Dosen)

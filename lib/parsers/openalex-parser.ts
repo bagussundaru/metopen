@@ -106,7 +106,7 @@ export async function fetchEuropePMCWorks(
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
-        "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen@uny.ac.id)",
+        "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen-research@academic.org)",
       },
     });
 
@@ -167,11 +167,11 @@ export async function fetchOpenAlexWorks(
   try {
     // IMPORTANT: DO NOT add &sort=cited_by_count:desc because OpenAlex will discard
     // BM25 text relevance ranking and return completely unrelated mega-cited papers (e.g. statistics/psychology)!
-    const url = `https://api.openalex.org/works?search=${encodeURIComponent(searchQuery)}&per_page=${Math.min(limit, 50)}&mailto=metopen@uny.ac.id`;
+    const url = `https://api.openalex.org/works?search=${encodeURIComponent(searchQuery)}&per_page=${Math.min(limit, 50)}&mailto=metopen-research@academic.org`;
 
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen@uny.ac.id)",
+        "User-Agent": "Metopen-KanvasTesis/1.0 (mailto:metopen-research@academic.org)",
         Accept: "application/json",
       },
     });

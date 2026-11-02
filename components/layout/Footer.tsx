@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex items-center gap-2">
           <GraduationCap className="w-4 h-4 text-indigo-500" />
           <span>
-            Kanvas Topik Tesis S2 Pascasarjana UNY &bull; Standar Scopus & Google Scholar
+            Kanvas Topik Tesis S2 Pascasarjana &bull; Standar Scopus & Google Scholar
           </span>
         </div>
 

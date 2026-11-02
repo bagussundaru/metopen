@@ -455,7 +455,7 @@ export function Step4MethodData({ canvas, onChange }: Step4MethodDataProps) {
                 <label className="block font-semibold mb-1">Sumber Data / Lokasi Lab *</label>
                 <input
                   type="text"
-                  placeholder="mis. Laboratorium Bahan & Struktur FT UNY"
+                  placeholder="mis. Laboratorium Bahan & Struktur Terpadu"
                   value={newData.source}
                   onChange={(e) => setNewData({ ...newData, source: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
@@ -489,7 +489,7 @@ export function Step4MethodData({ canvas, onChange }: Step4MethodDataProps) {
                 <label className="block font-semibold mb-1">Bukti Akses / Kontak Izin (Opsional)</label>
                 <input
                   type="text"
-                  placeholder="mis. Surat izin penggunaan lab no. 12/FT-UNY/2026"
+                  placeholder="mis. Surat izin penggunaan lab no. 12/LAB-STRUKTUR/2026"
                   value={newData.accessEvidence}
                   onChange={(e) => setNewData({ ...newData, accessEvidence: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"

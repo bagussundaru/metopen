@@ -33,7 +33,7 @@ export default function GuidePage() {
                 Panduan Metodologi Kanvas Tesis S2
               </h1>
               <p className="text-xs text-slate-500">
-                Pedoman penyusunan topik tesis rekayasa berstandar Scopus & Pascasarjana UNY
+                Pedoman penyusunan topik tesis rekayasa berstandar Scopus & Google Scholar
               </p>
             </div>
           </div>

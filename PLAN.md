@@ -1,6 +1,6 @@
 # RENCANA KERJA & ARSITEKTUR: KANVAS TESIS
 
-Aplikasi web *Kanvas Tesis* dirancang khusus untuk mahasiswa S2 (fokus: Teknik Sipil & rumpun rekayasa, disesuaikan dengan acuan akademik pascasarjana seperti **Universitas Negeri Yogyakarta / UNY** berbasis **Scopus** dan **Google Scholar**) untuk menyusun, memvalidasi (rule-based & AI opsional), memvisualisasikan peta literatur (VOSviewer / Scopus / Google Scholar via Publish or Perish), serta mengekspor kanvas topik tesis siap kumpul ke format PDF, DOCX, Markdown, dan JSON.
+Aplikasi web *Kanvas Tesis* dirancang khusus untuk mahasiswa S2 (fokus: Teknik Sipil & rumpun rekayasa, disesuaikan dengan acuan akademik program pascasarjana berbasis **Scopus** dan **Google Scholar**) untuk menyusun, memvalidasi (rule-based & AI opsional), memvisualisasikan peta literatur (VOSviewer / Scopus / Google Scholar via Publish or Perish), serta mengekspor kanvas topik tesis siap kumpul ke format PDF, DOCX, Markdown, dan JSON.
 
 ---
 
@@ -182,7 +182,7 @@ export const ReferenceSchema = z.object({
   year: z.number().int().min(1900).max(2100),
   title: z.string().min(1, "Judul literatur wajib diisi"),
   source: z.string().optional(), // Jurnal / Konferensi
-  indexSource: z.enum(["scopus", "google_scholar", "sinta", "other"]).default("scopus"), // Acuan UNY: Scopus & Google Scholar
+  indexSource: z.enum(["scopus", "google_scholar", "sinta", "other"]).default("scopus"), // Acuan Pascasarjana: Scopus & Google Scholar
   citedBy: z.number().int().min(0).optional().default(0),
   doi: z.string().optional(),
   keyFinding: z.string().min(1, "Temuan kunci wajib diisi untuk sintesis"),
@@ -233,7 +233,7 @@ export const CanvasSchema = z.object({
   meta: z.object({
     studentName: z.string().default(""),
     nim: z.string().default(""),
-    institution: z.string().default("Universitas Negeri Yogyakarta"),
+    institution: z.string().default("Program Pascasarjana Magister"),
     prodi: z.string().default("Teknik Sipil"),
     course: z.string().default("Metodologi Penelitian & Seminar Tesis"),
     lecturer: z.string().default(""),
@@ -400,7 +400,7 @@ export interface ValidationIssue {
 - Unit test dibuat dengan fixture nyata untuk memverifikasi parsing tanpa menebak.
 
 ### 5.2 Parser CSV Scopus & Google Scholar (via Publish or Perish / Harzing PoP)
-- Mahasiswa S2 di UNY umumnya mengunduh metadata literatur dari Scopus dan Google Scholar menggunakan perayap seperti **Publish or Perish (PoP)** atau ekspor langsung Scopus.
+- Mahasiswa S2 umumnya mengunduh metadata literatur dari Scopus dan Google Scholar menggunakan perayap seperti **Publish or Perish (PoP)** atau ekspor langsung Scopus.
 - Aplikasi mendukung impor CSV dari:
   1. **Scopus Direct CSV Export:** Kolom `Authors`, `Title`, `Year`, `Source title`, `DOI`, `Author Keywords`, `Index Keywords`, `Cited by`.
   2. **Google Scholar / Publish or Perish (PoP) CSV:** Kolom `Authors`, `Title`, `Year`, `Source`, `Cites`, `DOI`, `Keywords` / `Abstract`.

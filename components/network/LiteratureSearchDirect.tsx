@@ -314,7 +314,7 @@ export function LiteratureSearchDirect({
           <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs space-y-2 backdrop-blur-md animate-in fade-in">
             <h4 className="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
               <HelpCircle className="w-4 h-4" />
-              Panduan Pencarian Boolean (Standar Scopus / Google Scholar / UNY)
+              Panduan Pencarian Boolean (Standar Scopus & Google Scholar)
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-blue-100">
               <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">

@@ -71,7 +71,7 @@ describe("Method & Data Feasibility Validator", () => {
         id: "3",
         name: "Benda uji balok geopolimer",
         kind: "primary",
-        source: "Laboratorium FT UNY",
+        source: "Laboratorium Struktur Terpadu",
         availability: "must_generate",
         estimatedSize: "",
       },
@@ -110,7 +110,7 @@ describe("Method & Data Feasibility Validator", () => {
 
   it("should warn if experimental approach lacks test standards", () => {
     const data: Partial<DataNeed>[] = [
-      { id: "1", name: "Uji tekan silinder", kind: "primary", source: "Lab FT UNY", availability: "available", timeEstimateWeeks: 4 },
+      { id: "1", name: "Uji tekan silinder", kind: "primary", source: "Lab Bahan Struktur", availability: "available", timeEstimateWeeks: 4 },
     ];
 
     const issues = validateMethod({

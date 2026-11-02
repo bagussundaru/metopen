@@ -71,7 +71,7 @@ export const CanvasSchema = z.object({
   meta: z.object({
     studentName: z.string().default(""),
     nim: z.string().default(""),
-    institution: z.string().default("Universitas Negeri Yogyakarta"),
+    institution: z.string().default("Program Pascasarjana Magister"),
     prodi: z.string().default("S2 Teknik Sipil"),
     course: z.string().default("Metodologi Penelitian & Seminar Proposal"),
     lecturer: z.string().default(""),
