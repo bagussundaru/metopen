@@ -9,6 +9,7 @@ import { KeywordTable } from "./KeywordTable";
 import { GapCandidateList } from "./GapCandidateList";
 import { BibliometricMethodologyPanel } from "./BibliometricMethodologyPanel";
 import { exportToVosviewerFormat } from "@/lib/parsers/vosviewer-parser";
+import { buildOfficialScopusQuery, formatScopusCitation } from "@/lib/parsers/scopus-api";
 import {
   Search,
   Loader2,
@@ -20,6 +21,13 @@ import {
   Compass,
   HelpCircle,
   Code2,
+  ExternalLink,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Key,
+  Copy,
+  Globe,
 } from "lucide-react";
 
 interface LiteratureSearchDirectProps {
@@ -31,13 +39,13 @@ interface LiteratureSearchDirectProps {
 }
 
 const CIVIL_PRESETS = [
+  { label: "Fly Ash Geopolymer Concrete", query: "Fly Ash Geopolymer Concrete" },
+  { label: "Bibliometric Geopolymer", query: "Bibliometric Geopolymer Concrete" },
   { label: "K3 ∩ Data Center", query: "K3 Data Center" },
-  { label: "Beton Geopolimer ∩ Fly Ash", query: "Beton Geopolimer Fly Ash" },
-  { label: "Bibliometric ∩ Fly Ash Geopolymer", query: "Bibliometric Fly Ash Geopolymer" },
-  { label: "K3 ∩ Proyek Konstruksi", query: "K3 Proyek Konstruksi" },
-  { label: "Kuat Lentur ∩ Balok Beton", query: "Kuat Lentur Balok Beton" },
-  { label: "Stabilisasi Tanah ∩ Lempung", query: "Stabilisasi Tanah Lempung" },
-  { label: "Aspal Modifikasi ∩ Polimer", query: "Aspal Modifikasi Polimer" },
+  { label: "K3 Proyek Konstruksi", query: "K3 Proyek Konstruksi" },
+  { label: "Kuat Lentur Balok Beton", query: "Kuat Lentur Balok Beton" },
+  { label: "Stabilisasi Tanah Lempung", query: "Stabilisasi Tanah Lempung" },
+  { label: "Alkali-Activated Materials", query: "Alkali-Activated Stabilization" },
   { label: "Struktur Tahan Gempa", query: "Struktur Tahan Gempa" },
 ];
 
@@ -49,27 +57,57 @@ export function LiteratureSearchDirect({
   onTakeSnapshot,
 }: LiteratureSearchDirectProps) {
   const [query, setQuery] = useState(
-    canvas.title.subject || canvas.title.intervention || "K3 Data Center"
+    canvas.title.subject || canvas.title.intervention || "Fly Ash Geopolymer Concrete"
   );
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSearchedTopic, setActiveSearchedTopic] = useState<string>("");
   const [currentBooleanQuery, setCurrentBooleanQuery] = useState<string>("");
+  const [currentScopusQuery, setCurrentScopusQuery] = useState<string>("");
+  const [currentScopusWebUrl, setCurrentScopusWebUrl] = useState<string>("");
   const [currentFacets, setCurrentFacets] = useState<string[]>([]);
   const [showBooleanHelp, setShowBooleanHelp] = useState<boolean>(false);
+  const [copiedScopusQuery, setCopiedScopusQuery] = useState<boolean>(false);
+  const [copiedCitationId, setCopiedCitationId] = useState<string | null>(null);
 
-  // Network State
+  // Network & Articles State
   const [nodes, setNodes] = useState<VosNode[]>([]);
   const [edges, setEdges] = useState<VosEdge[]>([]);
   const [articles, setArticles] = useState<DiscoveredArticle[]>([]);
   const [minYear, setMinYear] = useState(2018);
   const [maxYear, setMaxYear] = useState(2025);
-  const [viewMode, setViewMode] = useState<"network" | "overlay" | "table" | "articles" | "methodology">("network");
+  const [viewMode, setViewMode] = useState<"articles" | "network" | "overlay" | "table" | "methodology">("articles");
   const [selectedNode, setSelectedNode] = useState<VosNode | null>(null);
   const [transferredIds, setTransferredIds] = useState<Set<string>>(new Set());
+
+  // Scopus Filters
   const [articleFilter, setArticleFilter] = useState<"all" | "review" | "primary">("all");
   const [selectedKeywordFilter, setSelectedKeywordFilter] = useState<string | null>(null);
+  const [selectedJournalFilter, setSelectedJournalFilter] = useState<string | null>(null);
+  const [openAccessOnly, setOpenAccessOnly] = useState<boolean>(false);
+  const [expandedAbstracts, setExpandedAbstracts] = useState<Record<string, boolean>>({});
+
+  // Optional Scopus API Key (Lazy initialization from localStorage)
+  const [scopusApiKey, setScopusApiKey] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("SCOPUS_USER_API_KEY") || "";
+    }
+    return "";
+  });
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
+
+  const handleSaveApiKey = (key: string) => {
+    setScopusApiKey(key);
+    if (typeof window !== "undefined") {
+      if (key.trim()) {
+        localStorage.setItem("SCOPUS_USER_API_KEY", key.trim());
+      } else {
+        localStorage.removeItem("SCOPUS_USER_API_KEY");
+      }
+    }
+    setShowApiKeyModal(false);
+  };
 
   const handleInsertOperator = (op: string) => {
     setQuery((prev) => `${prev.trim()}${op}`);
@@ -98,17 +136,25 @@ export function LiteratureSearchDirect({
     setLoading(true);
     setError(null);
     try {
+      const headers: Record<string, string> = {};
+      if (scopusApiKey.trim()) {
+        headers["x-scopus-api-key"] = scopusApiKey.trim();
+      }
+
       const res = await fetch(
-        `/api/literature/search?q=${encodeURIComponent(trimmed)}&minOccurrences=${minOccurrences}`
+        `/api/literature/search?q=${encodeURIComponent(trimmed)}&minOccurrences=${minOccurrences}`,
+        { headers }
       );
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || "Gagal mencari data literatur.");
+        throw new Error(data.message || "Gagal mencari data literatur Scopus.");
       }
 
       if (!data.nodes || data.nodes.length === 0) {
-        setError(`Tidak ditemukan kata kunci yang cukup untuk topik "${trimmed}". Coba gunakan variasi kata kunci lain atau dalam bahasa Inggris.`);
+        setError(`Tidak ditemukan kata kunci yang cukup untuk topik "${trimmed}". Coba gunakan variasi kata kunci ilmiah atau dalam bahasa Inggris.`);
       }
+
+      const official = buildOfficialScopusQuery(trimmed);
 
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
@@ -117,13 +163,38 @@ export function LiteratureSearchDirect({
       setMaxYear(data.maxYear || 2025);
       setActiveSearchedTopic(trimmed);
       setCurrentBooleanQuery(data.booleanQuery || trimmed);
+      setCurrentScopusQuery(data.scopusQuery || official.scopusQuery);
+      setCurrentScopusWebUrl(data.scopusWebUrl || official.webUrl);
       setCurrentFacets(data.facets || []);
+      setSelectedKeywordFilter(null);
+      setSelectedJournalFilter(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mencari literatur.";
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mencari literatur Scopus.";
       setError(msg);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopyScopusQuery = () => {
+    const textToCopy = currentScopusQuery || buildOfficialScopusQuery(query).scopusQuery;
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedScopusQuery(true);
+    setTimeout(() => setCopiedScopusQuery(false), 2500);
+  };
+
+  const handleCopyCitation = (art: DiscoveredArticle) => {
+    const citation = formatScopusCitation(art);
+    navigator.clipboard.writeText(citation);
+    setCopiedCitationId(art.id);
+    setTimeout(() => setCopiedCitationId(null), 2500);
+  };
+
+  const toggleAbstract = (id: string) => {
+    setExpandedAbstracts((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
 
   const handleTransferArticle = (article: DiscoveredArticle) => {
@@ -136,8 +207,10 @@ export function LiteratureSearchDirect({
       doi: article.doi || "",
       citedBy: article.citedByCount,
       indexSource: "scopus",
-      keyFinding: `Meneliti topik ${article.keywords.slice(0, 3).join(", ")} dengan hasil terpublikasi pada ${article.journal}.`,
-      limitation: "Perlu diinvestigasi lebih lanjut pada variasi parameter dan kondisi lokal yang spesifik.",
+      keyFinding: article.abstract
+        ? article.abstract.slice(0, 180) + "..."
+        : `Meneliti topik ${article.keywords.slice(0, 3).join(", ")} terpublikasi pada jurnal Scopus ${article.journal}.`,
+      limitation: "Perlu diuji lebih lanjut pada variabel parameter dan kondisi material lokal pada kanvas tesis ini.",
     };
 
     onChange((prev) => ({
@@ -162,7 +235,9 @@ export function LiteratureSearchDirect({
       doi: a.doi || "",
       citedBy: a.citedByCount,
       indexSource: "scopus",
-      keyFinding: `Meneliti topik ${a.keywords.slice(0, 3).join(", ")} dengan kontribusi saintifik terukur.`,
+      keyFinding: a.abstract
+        ? a.abstract.slice(0, 180) + "..."
+        : `Meneliti topik ${a.keywords.slice(0, 3).join(", ")} dengan kontribusi saintifik terukur pada ${a.journal}.`,
       limitation: "Belum menguji secara spesifik intervensi kombinasi bahan dan batasan lingkungan yang diusulkan pada kanvas ini.",
     }));
 
@@ -201,20 +276,58 @@ export function LiteratureSearchDirect({
 
   const hasGraph = nodes.length > 0;
 
+  // Filter articles logic
+  const isReviewArticle = (art: DiscoveredArticle) =>
+    art.docType === "review" || /review|bibliometric|scientometric|systematic|meta-analysis/i.test(art.title);
+
+  const reviewArticles = articles.filter(isReviewArticle);
+  const primaryArticles = articles.filter((a) => !isReviewArticle(a));
+
+  // Extract unique journal list for filtering
+  const journalCounts = new Map<string, number>();
+  articles.forEach((a) => {
+    if (a.journal) {
+      journalCounts.set(a.journal, (journalCounts.get(a.journal) || 0) + 1);
+    }
+  });
+  const topJournals = Array.from(journalCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+
+  const filteredArticles = articles.filter((art) => {
+    if (articleFilter === "review" && !isReviewArticle(art)) return false;
+    if (articleFilter === "primary" && isReviewArticle(art)) return false;
+    if (openAccessOnly && !art.isOpenAccess) return false;
+    if (selectedJournalFilter && art.journal !== selectedJournalFilter) return false;
+    if (selectedKeywordFilter) {
+      const match = art.keywords.some((k) => k.toLowerCase() === selectedKeywordFilter.toLowerCase());
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const previewScopus = buildOfficialScopusQuery(query);
+
   return (
     <div className="space-y-6">
-      {/* Search Hero Box */}
+      {/* Search Hero Box - Scopus Focused */}
       <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 text-white shadow-xl space-y-4">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-xs font-semibold text-blue-100 mb-2">
-            <Compass className="w-4 h-4 text-amber-300" />
-            Pencarian Literatur Akademis & Peta VOSviewer Instan
-          </span>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-xs font-semibold text-blue-100">
+              <Compass className="w-4 h-4 text-amber-300" />
+              Patokan Utama Dosen: Penelusuran Dokumen Scopus (Scopus Search)
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase tracking-wide">
+              Scopus Database (Elsevier)
+            </span>
+          </div>
+
           <h3 className="text-xl font-extrabold tracking-tight">
-            Ketik Tema Penelitian Anda &rarr; Peta VOSviewer Terbentuk Otomatis
+            Penelusuran Artikel Ilmiah Scopus &amp; Visualisasi Jejaring VOSviewer
           </h3>
           <p className="text-xs text-blue-100/90 leading-relaxed mt-1">
-            Tidak perlu memasang software desktop VOSviewer atau mengunduh CSV manual. Cukup masukkan kata kunci topik tesis Anda, sistem akan langsung menambang artikel Scopus & Google Scholar dan merender jejaring bibliometrik secara instan.
+            Seluruh pencarian difokuskan secara khusus pada artikel karya ilmiah (<em>Original Articles</em>) dan tinjauan bibliometrik (<em>Bibliometric Reviews</em>) bereputasi Scopus. Hasil pencarian langsung membentuk jejaring co-word VOSviewer secara instan.
           </p>
         </div>
 
@@ -227,7 +340,7 @@ export function LiteratureSearchDirect({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-              placeholder='Ketik tema tesis, mis. "K3" AND "Data Center", atau "beton geopolimer" AND "fly ash"...'
+              placeholder='Ketik tema tesis, mis. "Fly Ash" AND "Geopolymer Concrete", atau "K3" AND "Data Center"...'
               className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white text-slate-900 placeholder:text-slate-400 font-medium text-xs sm:text-sm focus:outline-none focus:ring-3 focus:ring-blue-300 shadow-sm"
             />
           </div>
@@ -236,17 +349,17 @@ export function LiteratureSearchDirect({
             type="button"
             onClick={() => handleSearch(query)}
             disabled={loading || !query.trim()}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                <span>Menambang Literatur & Peta...</span>
+                <span>Menelusuri Scopus &amp; Peta...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 text-slate-950" />
-                <span>Cari & Tampilkan Peta VOSviewer</span>
+                <span>Cari Dokumen Scopus &amp; VOSviewer</span>
               </>
             )}
           </button>
@@ -256,13 +369,13 @@ export function LiteratureSearchDirect({
         <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
           <span className="text-blue-200 font-semibold mr-1 flex items-center gap-1">
             <Code2 className="w-3.5 h-3.5 text-amber-300" />
-            Sisipkan Operator Boolean:
+            Operator Boolean:
           </span>
           <button
             type="button"
             onClick={() => handleInsertOperator(" AND ")}
             className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-amber-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
-            title="Irisan Wajib: Kedua istilah harus ada dalam literatur (contoh: K3 AND Data Center)"
+            title="Irisan Wajib: Kedua istilah harus ada dalam dokumen Scopus"
           >
             + AND
           </button>
@@ -270,7 +383,7 @@ export function LiteratureSearchDirect({
             type="button"
             onClick={() => handleInsertOperator(" OR ")}
             className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-blue-200 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
-            title="Pilihan / Sinonim: Salah satu istilah cukup (contoh: 'data center' OR 'server farm')"
+            title="Pilihan / Sinonim: Salah satu istilah cukup"
           >
             + OR
           </button>
@@ -278,7 +391,7 @@ export function LiteratureSearchDirect({
             type="button"
             onClick={() => handleInsertOperator(" NOT ")}
             className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-rose-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
-            title="Pengecualian: Buang literatur yang memuat istilah ini"
+            title="Pengecualian istilah"
           >
             + NOT
           </button>
@@ -286,7 +399,7 @@ export function LiteratureSearchDirect({
             type="button"
             onClick={handleWrapQuotes}
             className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-emerald-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
-            title="Frasa Tepat: Bungkus kata kunci dengan tanda kutip ganda"
+            title="Frasa Tepat"
           >
             &quot;Frasa Tepat&quot;
           </button>
@@ -294,9 +407,19 @@ export function LiteratureSearchDirect({
             type="button"
             onClick={handleWrapParentheses}
             className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-purple-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
-            title="Kelompok: Bungkus dengan tanda kurung ( ... )"
+            title="Kelompok: ( ... )"
           >
             ( Kelompok )
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowApiKeyModal(true)}
+            className="px-2.5 py-0.5 rounded-lg bg-indigo-500/30 hover:bg-indigo-500/40 text-indigo-200 font-semibold border border-indigo-400/30 transition-all flex items-center gap-1 cursor-pointer"
+            title="Masukkan Elsevier Scopus API Key personal/institusi (opsional)"
+          >
+            <Key className="w-3 h-3 text-amber-300" />
+            <span>{scopusApiKey ? "Kunci Scopus API (Aktif)" : "Kunci Scopus API (Opsional)"}</span>
           </button>
 
           <button
@@ -314,7 +437,7 @@ export function LiteratureSearchDirect({
           <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs space-y-2 backdrop-blur-md animate-in fade-in">
             <h4 className="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
               <HelpCircle className="w-4 h-4" />
-              Panduan Pencarian Boolean (Standar Scopus & Google Scholar)
+              Sintaks Resmi Pencarian Dokumen Scopus (TITLE-ABS-KEY &amp; Boolean)
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-blue-100">
               <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
@@ -323,24 +446,62 @@ export function LiteratureSearchDirect({
               </div>
               <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
                 <strong className="text-blue-200">2. Operator OR (Sinonim):</strong>
-                <p className="mt-0.5">Memperluas padanan kata ilmiah. Misal: <code className="text-blue-200 font-mono">(&quot;data center&quot; OR &quot;server farm&quot;)</code>.</p>
+                <p className="mt-0.5">Memperluas padanan kata ilmiah. Misal: <code className="text-blue-200 font-mono">(&quot;geopolymer concrete&quot; OR &quot;alkali-activated&quot;)</code>.</p>
               </div>
               <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
                 <strong className="text-emerald-300">3. Tanda Kutip &quot;...&quot; (Frasa Tepat):</strong>
-                <p className="mt-0.5">Mencegah kata terpecah secara terpisah. Misal: <code className="text-emerald-200 font-mono">&quot;keselamatan kerja&quot;</code> bukan sekadar kata &quot;kerja&quot; acak.</p>
+                <p className="mt-0.5">Mencegah kata terpecah secara terpisah. Misal: <code className="text-emerald-200 font-mono">&quot;fly ash&quot;</code> bukan sekadar kata &quot;ash&quot; acak.</p>
               </div>
               <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
-                <strong className="text-purple-300">4. Otomatisasi Cerdas:</strong>
-                <p className="mt-0.5">Jika Anda hanya mengetik <code className="text-purple-200 font-mono">K3 Data Center</code>, sistem otomatis mengubahnya menjadi irisan Boolean <code className="text-purple-200 font-mono">K3 AND &quot;Data Center&quot;</code> dan menerjemahkan ke istilah internasional!</p>
+                <strong className="text-purple-300">4. Pembatasan Dokumen Scopus:</strong>
+                <p className="mt-0.5">Sistem membatasi pada <code className="text-purple-200 font-mono">DOCTYPE(ar OR re)</code> (Artikel &amp; Review) untuk menjamin kualitas standar tesis S2.</p>
               </div>
             </div>
           </div>
         )}
 
+        {/* Live Scopus Official Query Generator Bar */}
+        <div className="p-3.5 rounded-2xl bg-black/25 border border-white/15 text-xs space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-amber-300 shrink-0" />
+              <span className="font-bold text-amber-300 text-xs">
+                Kueri Resmi Scopus Document Search:
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyScopusQuery}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-blue-100 text-[11px] font-semibold border border-white/15 transition-all flex items-center gap-1 cursor-pointer"
+                title="Salin string kueri Scopus untuk ditempel langsung di portal Scopus kampus"
+              >
+                {copiedScopusQuery ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedScopusQuery ? "Tersalin!" : "Salin Kueri Scopus"}</span>
+              </button>
+
+              <a
+                href={currentScopusWebUrl || previewScopus.webUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold shadow-xs transition-all flex items-center gap-1"
+                title="Buka langsung halaman hasil pencarian Scopus.com resmi di tab baru"
+              >
+                <span>Buka di Scopus.com</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+
+          <div className="font-mono text-[11px] text-blue-100 bg-black/30 p-2 rounded-xl border border-white/10 break-all select-all">
+            {currentScopusQuery || previewScopus.scopusQuery}
+          </div>
+        </div>
+
         {/* Quick Suggestion Pills */}
         <div className="space-y-2 pt-1">
           <div className="text-[11px] font-semibold text-blue-200">
-            Topik Populer Bidang Teknik Sipil (Klik untuk langsung memetakan):
+            Topik Acuan Populer Rumpun Teknik Sipil &amp; Material (Klik untuk telusuri):
           </div>
           <div className="flex flex-wrap gap-1.5">
             {CIVIL_PRESETS.map((preset) => (
@@ -375,27 +536,85 @@ export function LiteratureSearchDirect({
         </div>
       </div>
 
+      {/* Modal Elsevier Scopus API Key */}
+      {showApiKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200">
+                <Key className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Kunci API Elsevier Scopus
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Integrasi langsung ke Elsevier Developer API
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Jika Anda memiliki akun atau langganan institusi kampus pada portal Elsevier Developer (<strong>dev.elsevier.com</strong>), Anda dapat memasukkan API Key di bawah untuk menambang langsung dari server Elsevier Scopus.
+            </p>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Elsevier Scopus API Key (X-ELS-APIKey)
+              </label>
+              <input
+                type="text"
+                value={scopusApiKey}
+                onChange={(e) => setScopusApiKey(e.target.value)}
+                placeholder="mis. 7f8a9b2c3d4e5f6a..."
+                className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">
+                Catatan: Kunci ini hanya disimpan di browser lokal (localStorage) Anda dan tidak dikirim ke server luar.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowApiKeyModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveApiKey(scopusApiKey)}
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs"
+              >
+                Simpan Kunci
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 text-rose-800 text-xs">
           {error}
         </div>
       )}
 
-      {/* When Network is Loaded */}
+      {/* When Results Loaded */}
       {hasGraph ? (
         <div className="space-y-6">
-          {/* Active Searched Topic & Boolean Logic Banner */}
+          {/* Active Searched Topic & Scopus Banner */}
           {activeSearchedTopic && (
             <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-xs space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
                   <span className="text-slate-800 dark:text-slate-200">
-                    Hasil Pemetaan untuk: <strong className="text-blue-700 dark:text-blue-300 font-extrabold text-sm">&quot;{activeSearchedTopic}&quot;</strong>
+                    Hasil Penelusuran Scopus untuk: <strong className="text-blue-700 dark:text-blue-300 font-extrabold text-sm">&quot;{activeSearchedTopic}&quot;</strong>
                   </span>
                 </div>
                 <span className="text-slate-600 dark:text-slate-400 font-semibold text-[11px]">
-                  {articles.length} Artikel Ilmiah Terverifikasi &bull; {nodes.length} Kata Kunci &bull; {edges.length} Tautan Relasi
+                  {articles.length} Dokumen Ilmiah Scopus &bull; {nodes.length} Istilah Kata Kunci &bull; {edges.length} Hubungan Co-Word
                 </span>
               </div>
 
@@ -403,7 +622,7 @@ export function LiteratureSearchDirect({
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-blue-100 dark:border-slate-800">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-bold text-[10px] tracking-wide">
-                      LOGIKA BOOLEAN
+                      SCOPUS TITLE-ABS-KEY
                     </span>
                     {currentFacets.length > 1 && (
                       <div className="flex items-center gap-1">
@@ -418,9 +637,6 @@ export function LiteratureSearchDirect({
                         ))}
                       </div>
                     )}
-                    <div className="text-[11px] text-slate-500 font-mono truncate max-w-full" title={currentBooleanQuery}>
-                      Query: <code className="text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">{currentBooleanQuery}</code>
-                    </div>
                   </div>
 
                   <button
@@ -429,7 +645,7 @@ export function LiteratureSearchDirect({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
-                    <span>Lihat Metode Bibliometrik &amp; Draf Bab 3</span>
+                    <span>Lihat Metodologi Bibliometrik &amp; Draf Bab 3</span>
                   </button>
                 </div>
               )}
@@ -442,48 +658,53 @@ export function LiteratureSearchDirect({
               <span className="text-xs font-bold text-slate-500 mr-1">Tampilan:</span>
               <button
                 type="button"
+                onClick={() => setViewMode("articles")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  viewMode === "articles"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Dokumen Ilmiah Scopus ({articles.length})</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setViewMode("network")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   viewMode === "network"
                     ? "bg-blue-600 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
-                Klaster Topik (Network View)
+                Klaster VOSviewer (Network)
               </button>
+
               <button
                 type="button"
                 onClick={() => setViewMode("overlay")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   viewMode === "overlay"
                     ? "bg-blue-600 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
-                Tahun Publikasi (Overlay View)
+                Tahun Publikasi (Overlay)
               </button>
+
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   viewMode === "table"
                     ? "bg-blue-600 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
                 Tabel Kata Kunci ({nodes.length})
               </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("articles")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  viewMode === "articles"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                Artikel Ilmiah ({articles.length})
-              </button>
+
               <button
                 type="button"
                 onClick={() => setViewMode("methodology")}
@@ -507,7 +728,7 @@ export function LiteratureSearchDirect({
             {/* Quick Action Buttons */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-[11px] text-slate-500 mr-1">
-                <span>Filter:</span>
+                <span>Ambang:</span>
                 <select
                   value={minOccurrences}
                   onChange={(e) => setMinOccurrences(Number(e.target.value))}
@@ -518,11 +739,12 @@ export function LiteratureSearchDirect({
                   <option value={3}>Min. 3x</option>
                 </select>
               </div>
+
               <button
                 type="button"
                 onClick={handleTransferTopArticles}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all"
-                title="Transfer 5 artikel teratas ke daftar referensi kanvas Anda"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                title="Transfer 5 artikel Scopus teratas ke daftar referensi kanvas tesis (Langkah 2)"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Transfer 5 Artikel ke Langkah 2</span>
@@ -531,8 +753,8 @@ export function LiteratureSearchDirect({
               <button
                 type="button"
                 onClick={handleDownloadVosFiles}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition-all shadow-xs"
-                title="Unduh berkas .map.txt dan .net.txt untuk dibuka di VOSviewer desktop"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition-all shadow-xs cursor-pointer"
+                title="Unduh berkas .map.txt dan .net.txt untuk dibuka di software VOSviewer desktop"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Unduh File VOSviewer</span>
@@ -540,7 +762,377 @@ export function LiteratureSearchDirect({
             </div>
           </div>
 
-          {/* Cytoscape Canvas */}
+          {/* VIEW 1: SCOPUS DOCUMENTS SEARCH RESULTS VIEW (MATCHING USER SCREENSHOT) */}
+          {viewMode === "articles" && (
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              {/* Header with counts and reset */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span className="text-base font-extrabold text-blue-700 dark:text-blue-300">
+                      Scopus — Documents Search Results
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                      {filteredArticles.length} dari {articles.length} Dokumen
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Metadata artikel ilmiah hasil kurasi Scopus (Elsevier), CrossRef &amp; Europe PMC
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {(selectedKeywordFilter || selectedJournalFilter || openAccessOnly || articleFilter !== "all") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedKeywordFilter(null);
+                        setSelectedJournalFilter(null);
+                        setOpenAccessOnly(false);
+                        setArticleFilter("all");
+                      }}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                    >
+                      Reset Semua Filter
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleTransferTopArticles}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Transfer 5 Teratas ke Kanvas</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scopus Facet Filters Row: Document Type Tabs */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 mr-1">Tipe Dokumen (Scopus):</span>
+                <button
+                  type="button"
+                  onClick={() => setArticleFilter("all")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    articleFilter === "all"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                      : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200"
+                  }`}
+                >
+                  Semua Dokumen ({articles.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setArticleFilter("review")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    articleFilter === "review"
+                      ? "bg-amber-600 text-white shadow-xs"
+                      : "bg-amber-50 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 hover:bg-amber-100"
+                  }`}
+                >
+                  <span>🔍 Tinjauan Bibliometrik / Review ({reviewArticles.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setArticleFilter("primary")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    articleFilter === "primary"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-blue-50 text-blue-900 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 hover:bg-blue-100"
+                  }`}
+                >
+                  Artikel Penelitian Primer ({primaryArticles.length})
+                </button>
+
+                <label className="ml-auto inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={openAccessOnly}
+                    onChange={(e) => setOpenAccessOnly(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="font-semibold">Hanya Open Access</span>
+                </label>
+              </div>
+
+              {/* Scopus Journal (Source Title) Filter Pills */}
+              {topJournals.length > 0 && (
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Jurnal Terindeks Scopus (Source Title):
+                    </span>
+                    {selectedJournalFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedJournalFilter(null)}
+                        className="text-[10px] text-rose-600 font-semibold hover:underline"
+                      >
+                        Hapus Filter Jurnal
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {topJournals.map(([journalName, count]) => {
+                      const isSelected = selectedJournalFilter === journalName;
+                      return (
+                        <button
+                          key={journalName}
+                          type="button"
+                          onClick={() => setSelectedJournalFilter(isSelected ? null : journalName)}
+                          className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                              : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                          }`}
+                        >
+                          <em>{journalName}</em> <strong className="ml-1 opacity-75">({count})</strong>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Scopus Keyword Facets Pill Row */}
+              {nodes.length > 0 && (
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Kata Kunci Scopus (Author &amp; Index Keywords):
+                    </span>
+                    {selectedKeywordFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedKeywordFilter(null)}
+                        className="text-[10px] text-rose-600 font-semibold hover:underline"
+                      >
+                        Hapus Filter Kata Kunci
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {nodes.slice(0, 10).map((f) => {
+                      const isSelected = selectedKeywordFilter?.toLowerCase() === f.label.toLowerCase();
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setSelectedKeywordFilter(isSelected ? null : f.label)}
+                          className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                              : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400"
+                          }`}
+                        >
+                          {f.label} <strong className="ml-1 opacity-75">({f.occurrences})</strong>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Scopus Documents Item List */}
+              <div className="space-y-3">
+                {filteredArticles.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-slate-400">
+                    Tidak ada dokumen Scopus yang cocok dengan filter yang dipilih. Coba reset filter.
+                  </div>
+                ) : (
+                  filteredArticles.map((art) => {
+                    const isTransferred = transferredIds.has(art.id);
+                    const isReview = isReviewArticle(art);
+                    const isAbstractExpanded = Boolean(expandedAbstracts[art.id]);
+                    const isCitationCopied = copiedCitationId === art.id;
+
+                    return (
+                      <div
+                        key={art.id}
+                        className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40 space-y-3 hover:border-blue-400 hover:shadow-xs transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1.5 flex-1">
+                            {/* Scopus Badges: Review / Article, Open Access, Year */}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {isReview ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 uppercase">
+                                  Review &bull; Tinjauan Bibliometrik
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 uppercase">
+                                  Article &bull; Riset Primer
+                                </span>
+                              )}
+
+                              {art.isOpenAccess && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                                  Open Access
+                                </span>
+                              )}
+
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                                Scopus Indexed
+                              </span>
+
+                              <span className="text-[11px] text-slate-500 font-bold ml-1">
+                                {art.year}
+                              </span>
+                            </div>
+
+                            {/* Title with link */}
+                            <h5 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
+                              {art.doi ? (
+                                <a
+                                  href={`https://doi.org/${art.doi.replace(/^https?:\/\/doi\.org\//, "")}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                >
+                                  {art.title}
+                                </a>
+                              ) : (
+                                art.title
+                              )}
+                            </h5>
+
+                            {/* Authors & Journal Citations */}
+                            <p className="text-xs text-slate-600 dark:text-slate-300">
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">{art.authors}</span>
+                              {" &bull; "}
+                              <em className="text-blue-700 dark:text-blue-400 font-medium">{art.journal}</em>
+                              {art.volume && <span>, {art.volume}</span>}
+                              {art.issue && <span>({art.issue})</span>}
+                              {art.pages && <span>, {art.pages}</span>}
+                              {" &bull; "}
+                              <strong className="text-slate-900 dark:text-slate-100 font-bold">
+                                {art.citedByCount}
+                              </strong>{" "}
+                              sitasi Scopus
+                            </p>
+                          </div>
+
+                          {/* Quick Add to Canvas Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleTransferArticle(art)}
+                            disabled={isTransferred}
+                            className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                              isTransferred
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
+                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer active:scale-95"
+                            }`}
+                          >
+                            {isTransferred ? (
+                              <>
+                                <Check className="w-4 h-4 text-emerald-600" />
+                                <span>Ditambahkan</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4" />
+                                <span>Tambah ke Kanvas</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Expandable Abstract Box */}
+                        {art.abstract && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => toggleAbstract(art.id)}
+                              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              {isAbstractExpanded ? (
+                                <>
+                                  <ChevronUp className="w-3.5 h-3.5" />
+                                  <span>Sembunyikan Abstrak</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-3.5 h-3.5" />
+                                  <span>Tampilkan Abstrak Dokumen (Show Abstract)</span>
+                                </>
+                              )}
+                            </button>
+
+                            {isAbstractExpanded && (
+                              <div className="mt-2 p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-1 animate-in fade-in">
+                                <span className="font-bold text-slate-900 dark:text-white block text-[11px] uppercase tracking-wide">
+                                  Abstrak Publikasi:
+                                </span>
+                                <p>{art.abstract}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Keyword Pills & Action Footer */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800">
+                          {art.keywords.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {art.keywords.slice(0, 5).map((kw, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setSelectedKeywordFilter(kw)}
+                                  className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:border-blue-400 cursor-pointer"
+                                >
+                                  {kw}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-2 text-xs ml-auto">
+                            {art.doi && (
+                              <a
+                                href={`https://doi.org/${art.doi.replace(/^https?:\/\/doi\.org\//, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-slate-500 hover:text-blue-600 font-semibold"
+                                title="Lihat publikasi langsung di portal penerbit resmi (DOI)"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Penerbit (DOI)</span>
+                              </a>
+                            )}
+
+                            <a
+                              href={art.scopusUrl || `https://www.scopus.com/results/results.uri?src=s&sot=b&sdt=b&origin=searchbasic&searchterm1=${encodeURIComponent(`"${art.title}"`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-slate-500 hover:text-blue-600 font-semibold"
+                              title="Cari dokumen ini langsung di portal Scopus"
+                            >
+                              <Globe className="w-3 h-3" />
+                              <span>Cari di Scopus</span>
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopyCitation(art)}
+                              className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:hover:text-white font-semibold cursor-pointer"
+                              title="Salin rujukan dalam format Scopus APA 7th Edition"
+                            >
+                              {isCitationCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                              <span>{isCitationCopied ? "Sitasi Tersalin!" : "Salin Sitasi"}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: CYTOSCAPE NETWORK & OVERLAY VIEW */}
           {(viewMode === "network" || viewMode === "overlay") && (
             <CytoscapeGraph
               nodes={nodes}
@@ -553,223 +1145,12 @@ export function LiteratureSearchDirect({
             />
           )}
 
-          {/* Keyword Table View */}
+          {/* VIEW 3: KEYWORD TABLE VIEW */}
           {viewMode === "table" && (
             <KeywordTable nodes={nodes} onSelectKeyword={(node) => setSelectedNode(node)} />
           )}
 
-          {/* Articles View */}
-          {viewMode === "articles" && (() => {
-            const isReviewArticle = (art: DiscoveredArticle) =>
-              /review|bibliometric|scientometric|systematic|meta-analysis/i.test(art.title);
-
-            const reviewArticles = articles.filter(isReviewArticle);
-            const primaryArticles = articles.filter((a) => !isReviewArticle(a));
-
-            const filteredArticles = articles.filter((art) => {
-              if (articleFilter === "review" && !isReviewArticle(art)) return false;
-              if (articleFilter === "primary" && isReviewArticle(art)) return false;
-              if (selectedKeywordFilter) {
-                const match = art.keywords.some((k) => k.toLowerCase() === selectedKeywordFilter.toLowerCase());
-                if (!match) return false;
-              }
-              return true;
-            });
-
-            const topFacets = nodes.slice(0, 8);
-
-            return (
-              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>{filteredArticles.length} dari {articles.length} Artikel Ilmiah</span>
-                      {selectedKeywordFilter && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-semibold">
-                          Filter: {selectedKeywordFilter}
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-xs text-slate-400">
-                      Terindeks di Scopus, CrossRef, Europe PMC &amp; Google Scholar
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {selectedKeywordFilter && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedKeywordFilter(null)}
-                        className="px-2.5 py-1 rounded-xl text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                      >
-                        Reset Filter
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleTransferTopArticles}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Transfer 5 Teratas ke Kanvas</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Scopus-style Filter Tabs: All vs Bibliometric Reviews vs Primary Research */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-slate-500 mr-1">Tipe Dokumen (Scopus):</span>
-                  <button
-                    type="button"
-                    onClick={() => setArticleFilter("all")}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                      articleFilter === "all"
-                        ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200"
-                    }`}
-                  >
-                    Semua Dokumen ({articles.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setArticleFilter("review")}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      articleFilter === "review"
-                        ? "bg-amber-600 text-white"
-                        : "bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 hover:bg-amber-100"
-                    }`}
-                  >
-                    <span>🔍 Tinjauan Bibliometrik / Review ({reviewArticles.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setArticleFilter("primary")}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                      articleFilter === "primary"
-                        ? "bg-blue-600 text-white"
-                        : "bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 hover:bg-blue-100"
-                    }`}
-                  >
-                    Artikel Penelitian Primer ({primaryArticles.length})
-                  </button>
-                </div>
-
-                {/* Scopus-style Keyword Facets Pill Row */}
-                {topFacets.length > 0 && (
-                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Facet Kata Kunci Scopus (Klik untuk memfilter artikel):
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {topFacets.map((f) => {
-                        const isSelected = selectedKeywordFilter?.toLowerCase() === f.label.toLowerCase();
-                        return (
-                          <button
-                            key={f.id}
-                            type="button"
-                            onClick={() =>
-                              setSelectedKeywordFilter(isSelected ? null : f.label)
-                            }
-                            className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-all cursor-pointer ${
-                              isSelected
-                                ? "bg-blue-600 text-white border-blue-600 shadow-xs"
-                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"
-                            }`}
-                          >
-                            {f.label} <strong className="ml-1 opacity-75">({f.occurrences})</strong>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {filteredArticles.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-slate-400">
-                      Tidak ada artikel yang cocok dengan filter yang dipilih.
-                    </div>
-                  ) : (
-                    filteredArticles.map((art) => {
-                      const isTransferred = transferredIds.has(art.id);
-                      const isReview = isReviewArticle(art);
-                      return (
-                        <div
-                          key={art.id}
-                          className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2 hover:border-blue-400 transition-all"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1.5">
-                              {/* Scopus metadata tags: Review, Open Access */}
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                {isReview && (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300">
-                                    Review / Bibliometric
-                                  </span>
-                                )}
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
-                                  Open Access
-                                </span>
-                                <span className="text-[10px] text-slate-500 font-medium">
-                                  Tahun: {art.year}
-                                </span>
-                              </div>
-
-                              <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
-                                {art.title}
-                              </h5>
-                              <p className="text-xs text-slate-500">
-                                {art.authors} &bull; <span className="italic">{art.journal}</span> &bull; <strong>{art.citedByCount}</strong> sitasi
-                              </p>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleTransferArticle(art)}
-                              disabled={isTransferred}
-                              className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                                isTransferred
-                                  ? "bg-slate-100 text-slate-400 cursor-default"
-                                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer"
-                              }`}
-                            >
-                              {isTransferred ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Ditambahkan</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Plus className="w-3.5 h-3.5" />
-                                  <span>Tambah ke Kanvas</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-
-                          {art.keywords.length > 0 && (
-                            <div className="flex flex-wrap gap-1 pt-1">
-                              {art.keywords.map((kw, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={() => setSelectedKeywordFilter(kw)}
-                                  className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:border-blue-400 cursor-pointer"
-                                >
-                                  {kw}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Bibliometric Methodology View */}
+          {/* VIEW 4: BIBLIOMETRIC METHODOLOGY PANEL (BAB 3) */}
           {viewMode === "methodology" && (
             <BibliometricMethodologyPanel
               canvas={canvas}
@@ -784,7 +1165,7 @@ export function LiteratureSearchDirect({
             />
           )}
 
-          {/* Research Gap Candidates Analysis */}
+          {/* RESEARCH GAP CANDIDATES ANALYSIS */}
           <GapCandidateList
             nodes={nodes}
             edges={edges}
@@ -799,10 +1180,10 @@ export function LiteratureSearchDirect({
             <Compass className="w-6 h-6" />
           </div>
           <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-            Peta Literatur Belum Dimuat
+            Penelusuran Dokumen Scopus Belum Dimuat
           </h4>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Ketik tema di atas atau klik salah satu tombol topik populer untuk langsung menambang dan melihat visualisasi graf VOSviewer.
+            Ketik kata kunci tema riset Anda di atas atau klik salah satu topik populer untuk menelusuri artikel karya ilmiah Scopus dan merender graf VOSviewer.
           </p>
         </div>
       )}

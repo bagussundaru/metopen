@@ -116,12 +116,17 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-extrabold text-[10px] tracking-wider uppercase border border-blue-200">
+            Acuan Utama Dosen: Scopus Database
+          </span>
+        </div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
           <Network className="w-5 h-5 text-blue-600" />
-          Peta Literatur Bibliometrik (Pencarian VOSviewer & Scopus)
+          Pusat Literatur Scopus &amp; Peta Bibliometrik VOSviewer
         </h2>
         <p className="text-xs text-slate-500 mt-1">
-          Ketik tema riset Anda untuk langsung menambang artikel ilmiah dan menampilkan peta jejaring VOSviewer secara otomatis, atau unggah berkas manual.
+          Fokus utama pada penelusuran artikel ilmiah dan tinjauan bibliometrik terindeks Scopus. Bangun visualisasi jejaring VOSviewer secara langsung atau impor berkas ekspor Scopus CSV.
         </p>
       </div>
 
@@ -136,21 +141,8 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
               : "text-slate-600 hover:text-slate-900 dark:text-slate-300"
           }`}
         >
-          <Compass className="w-4 h-4" />
-          <span>🔍 Cari Tema (Otomatis VOSviewer)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSourceMode("vosviewer")}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
-            sourceMode === "vosviewer"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-300 shadow-sm font-bold"
-              : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
-          }`}
-        >
-          <Upload className="w-3.5 h-3.5" />
-          <span>Unggah Berkas VOSviewer (.map & .net)</span>
+          <Compass className="w-4 h-4 text-amber-300" />
+          <span>🔍 Scopus Search (Fokus Utama)</span>
         </button>
 
         <button
@@ -163,7 +155,20 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
           }`}
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span>Impor CSV Scopus / Google Scholar</span>
+          <span>Impor CSV Ekspor Scopus</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSourceMode("vosviewer")}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+            sourceMode === "vosviewer"
+              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-300 shadow-sm font-bold"
+              : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+          }`}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          <span>Unggah Berkas VOSviewer (.map &amp; .net)</span>
         </button>
       </div>
 

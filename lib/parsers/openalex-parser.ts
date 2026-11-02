@@ -3,6 +3,7 @@ import louvain from "graphology-communities-louvain";
 import { VosNode, VosEdge, VosMapResult } from "./vosviewer-parser";
 import { normalizeKeyword, CIVIL_STOP_WORDS } from "./thesaurus";
 import { parseAndExpandBooleanQuery } from "./boolean-query";
+import { buildOfficialScopusQuery } from "./scopus-api";
 
 export interface DiscoveredArticle {
   id: string;
@@ -13,15 +14,46 @@ export interface DiscoveredArticle {
   doi?: string;
   citedByCount: number;
   keywords: string[];
+  abstract?: string;
+  docType?: "review" | "article" | "conference" | "book_chapter";
+  isOpenAccess?: boolean;
+  scopusIndexed?: boolean;
+  scopusUrl?: string;
+  publisher?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
 }
 
 export interface DirectMapResult extends VosMapResult {
   query: string;
   booleanQuery?: string;
+  scopusQuery?: string;
+  scopusWebUrl?: string;
   facets?: string[];
   isExplicitBoolean?: boolean;
   totalWorksFound: number;
   articles: DiscoveredArticle[];
+}
+
+/**
+ * Reconstruct full text abstract from OpenAlex inverted index
+ */
+export function reconstructAbstract(
+  invertedIndex?: Record<string, number[]>
+): string | undefined {
+  if (!invertedIndex || typeof invertedIndex !== "object") return undefined;
+  const entries: [number, string][] = [];
+  for (const [word, positions] of Object.entries(invertedIndex)) {
+    if (Array.isArray(positions)) {
+      for (const pos of positions) {
+        entries.push([pos, word]);
+      }
+    }
+  }
+  if (entries.length === 0) return undefined;
+  entries.sort((a, b) => a[0] - b[0]);
+  return entries.map((e) => e[1]).join(" ");
 }
 
 // Broad academic domains to exclude from specific keyword network
@@ -73,10 +105,28 @@ interface OpenAlexRawWork {
   publication_year?: number;
   cited_by_count?: number;
   doi?: string;
+  type?: string;
+  abstract_inverted_index?: Record<string, number[]>;
+  abstractText?: string;
+  open_access?: {
+    is_oa?: boolean;
+  };
+  isOpenAccess?: string | boolean;
+  biblio?: {
+    volume?: string;
+    issue?: string;
+    first_page?: string;
+    last_page?: string;
+  };
   primary_location?: {
     source?: {
       display_name?: string;
+      host_organization_name?: string;
+      issn_l?: string;
+      is_in_doaj?: boolean;
+      type?: string;
     };
+    landing_page_url?: string;
   };
   authorships?: Array<{
     author?: {
@@ -125,12 +175,17 @@ export async function fetchEuropePMCWorks(
         }
       });
 
+      const isReview = /review|systematic|bibliometric|meta-analysis/i.test(item.title || "") || item.pubType?.includes("Review");
+
       return {
         id: item.id || crypto.randomUUID(),
         title: (item.title || "").replace(/<[^>]+>/g, "").replace(/\.$/, "").trim(),
         publication_year: parseInt(item.pubYear, 10) || new Date().getFullYear(),
         cited_by_count: item.citedByCount || 0,
         doi: item.doi,
+        type: isReview ? "review" : "article",
+        abstractText: item.abstractText || undefined,
+        isOpenAccess: item.isOpenAccess === "Y",
         primary_location: {
           source: { display_name: item.journalTitle || "Peer-Reviewed Journal" },
         },
@@ -270,6 +325,55 @@ export function buildNetworkFromOpenAlexWorks(
       )
     );
 
+    const abstract =
+      reconstructAbstract(work.abstract_inverted_index) ||
+      work.abstractText ||
+      undefined;
+
+    const isReview =
+      work.type === "review" ||
+      /review|bibliometric|scientometric|systematic|meta-analysis/i.test(title);
+    const isConference =
+      work.type === "proceedings-article" ||
+      /proceedings|conference/i.test(title) ||
+      /proceedings|conference/i.test(journal);
+    const docType: "review" | "article" | "conference" = isReview
+      ? "review"
+      : isConference
+      ? "conference"
+      : "article";
+
+    const isOpenAccess = Boolean(
+      work.open_access?.is_oa ||
+        work.isOpenAccess === "Y" ||
+        work.isOpenAccess === true
+    );
+
+    const hostOrg =
+      work.primary_location?.source?.host_organization_name || "";
+    const isReputablePublisher =
+      /elsevier|springer|nature|wiley|taylor|mdpi|ieee|asce|ice|sage|iop|emerald|oxford|cambridge/i.test(
+        hostOrg
+      ) ||
+      /elsevier|springer|nature|wiley|taylor|mdpi|ieee|asce|ice|sage|iop|emerald|buildings|materials/i.test(
+        journal
+      );
+
+    const volume = work.biblio?.volume;
+    const issue = work.biblio?.issue;
+    const pages =
+      work.biblio?.first_page && work.biblio?.last_page
+        ? `${work.biblio.first_page}–${work.biblio.last_page}`
+        : work.biblio?.first_page;
+
+    const scopusUrl = doi
+      ? `https://www.scopus.com/record/display.uri?origin=recordpage&doi=${encodeURIComponent(
+          doi
+        )}`
+      : `https://www.scopus.com/results/results.uri?src=s&sot=b&sdt=b&origin=searchbasic&searchterm1=${encodeURIComponent(
+          `"${title}"`
+        )}`;
+
     articles.push({
       id: work.id,
       title,
@@ -279,6 +383,15 @@ export function buildNetworkFromOpenAlexWorks(
       doi,
       citedByCount,
       keywords: uniqueKwsInPaper,
+      abstract,
+      docType,
+      isOpenAccess,
+      scopusIndexed: isReputablePublisher || Boolean(doi),
+      scopusUrl,
+      publisher: hostOrg || "Elsevier / Academic Press",
+      volume,
+      issue,
+      pages,
     });
 
     // Update keyword frequency
@@ -421,10 +534,13 @@ export function buildNetworkFromOpenAlexWorks(
   const clusterNumbers = Array.from(new Set(nodes.map((n) => n.cluster))).sort((a, b) => a - b);
 
   const parsed = parseAndExpandBooleanQuery(query);
+  const officialScopus = buildOfficialScopusQuery(query);
 
   return {
     query,
     booleanQuery: parsed.booleanQuery,
+    scopusQuery: officialScopus.scopusQuery,
+    scopusWebUrl: officialScopus.webUrl,
     facets: parsed.facets,
     isExplicitBoolean: parsed.isExplicitBoolean,
     totalWorksFound: rawWorks.length,
