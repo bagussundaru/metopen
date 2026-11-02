@@ -11,6 +11,7 @@ import { Step3ResearchQuestion } from "@/components/editor/Step3ResearchQuestion
 import { Step4MethodData } from "@/components/editor/Step4MethodData";
 import { Step5Feasibility } from "@/components/editor/Step5Feasibility";
 import { LiveValidationPanel } from "@/components/editor/LiveValidationPanel";
+import { ExportDialog } from "@/components/export/ExportDialog";
 import {
   FileText,
   BookOpen,
@@ -22,6 +23,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Printer,
+  Download,
 } from "lucide-react";
 
 interface StepWizardProps {
@@ -32,6 +34,7 @@ export function StepWizard({ canvas }: StepWizardProps) {
   const { updateActiveCanvas } = useCanvasStore();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<"wizard" | "network">("wizard");
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   // Validate entire canvas live
   const validation = useMemo(() => {
@@ -78,6 +81,15 @@ export function StepWizard({ canvas }: StepWizardProps) {
 
         {/* Quick Action Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsExportDialogOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+          >
+            <Download className="w-4 h-4" />
+            <span>Ekspor Kanvas</span>
+          </button>
+
           <Link
             href={`/print/${canvas.id}`}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs"
@@ -231,6 +243,13 @@ export function StepWizard({ canvas }: StepWizardProps) {
           </p>
         </div>
       )}
+
+      <ExportDialog
+        canvas={canvas}
+        rubric={validation.rubric}
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+      />
     </div>
   );
 }
