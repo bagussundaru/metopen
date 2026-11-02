@@ -17,6 +17,8 @@ import {
   Check,
   Plus,
   Compass,
+  HelpCircle,
+  Code2,
 } from "lucide-react";
 
 interface LiteratureSearchDirectProps {
@@ -28,12 +30,13 @@ interface LiteratureSearchDirectProps {
 }
 
 const CIVIL_PRESETS = [
-  { label: "Beton Geopolimer Fly Ash", query: "geopolymer concrete fly ash" },
-  { label: "Kuat Lentur Balok Beton", query: "reinforced concrete beam flexural capacity ductility" },
-  { label: "Stabilisasi Tanah Lempung", query: "expansive clay soil stabilization lime" },
-  { label: "Aspal Modifikasi Polimer", query: "polymer modified asphalt pavement durability" },
-  { label: "Struktur Tahan Gempa", query: "seismic performance reinforced concrete building" },
-  { label: "Ketahanan Sulfat Beton", query: "concrete sulfate resistance durability" },
+  { label: "K3 ∩ Data Center", query: "K3 Data Center" },
+  { label: "K3 ∩ Proyek Konstruksi", query: "K3 Proyek Konstruksi" },
+  { label: "Beton Geopolimer ∩ Fly Ash", query: "Beton Geopolimer Fly Ash" },
+  { label: "Kuat Lentur ∩ Balok Beton", query: "Kuat Lentur Balok Beton" },
+  { label: "Stabilisasi Tanah ∩ Lempung", query: "Stabilisasi Tanah Lempung" },
+  { label: "Aspal Modifikasi ∩ Polimer", query: "Aspal Modifikasi Polimer" },
+  { label: "Struktur Tahan Gempa", query: "Struktur Tahan Gempa" },
 ];
 
 export function LiteratureSearchDirect({
@@ -44,12 +47,15 @@ export function LiteratureSearchDirect({
   onTakeSnapshot,
 }: LiteratureSearchDirectProps) {
   const [query, setQuery] = useState(
-    canvas.title.subject || canvas.title.intervention || "geopolymer concrete fly ash"
+    canvas.title.subject || canvas.title.intervention || "K3 Data Center"
   );
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSearchedTopic, setActiveSearchedTopic] = useState<string>("");
+  const [currentBooleanQuery, setCurrentBooleanQuery] = useState<string>("");
+  const [currentFacets, setCurrentFacets] = useState<string[]>([]);
+  const [showBooleanHelp, setShowBooleanHelp] = useState<boolean>(false);
 
   // Network State
   const [nodes, setNodes] = useState<VosNode[]>([]);
@@ -60,6 +66,27 @@ export function LiteratureSearchDirect({
   const [viewMode, setViewMode] = useState<"network" | "overlay" | "table" | "articles">("network");
   const [selectedNode, setSelectedNode] = useState<VosNode | null>(null);
   const [transferredIds, setTransferredIds] = useState<Set<string>>(new Set());
+
+  const handleInsertOperator = (op: string) => {
+    setQuery((prev) => `${prev.trim()}${op}`);
+  };
+
+  const handleWrapQuotes = () => {
+    setQuery((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return '""';
+      if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed;
+      return `"${trimmed}"`;
+    });
+  };
+
+  const handleWrapParentheses = () => {
+    setQuery((prev) => {
+      const trimmed = prev.trim();
+      if (!trimmed) return "()";
+      return `(${trimmed})`;
+    });
+  };
 
   const handleSearch = async (searchQuery: string = query) => {
     const trimmed = searchQuery.trim();
@@ -85,6 +112,8 @@ export function LiteratureSearchDirect({
       setMinYear(data.minYear || 2018);
       setMaxYear(data.maxYear || 2025);
       setActiveSearchedTopic(trimmed);
+      setCurrentBooleanQuery(data.booleanQuery || trimmed);
+      setCurrentFacets(data.facets || []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mencari literatur.";
       setError(msg);
@@ -194,7 +223,7 @@ export function LiteratureSearchDirect({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-              placeholder="Ketik tema tesis, mis. beton geopolimer fly ash, kuat lentur balok, tanah lempung..."
+              placeholder='Ketik tema tesis, mis. "K3" AND "Data Center", atau "beton geopolimer" AND "fly ash"...'
               className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white text-slate-900 placeholder:text-slate-400 font-medium text-xs sm:text-sm focus:outline-none focus:ring-3 focus:ring-blue-300 shadow-sm"
             />
           </div>
@@ -218,6 +247,91 @@ export function LiteratureSearchDirect({
             )}
           </button>
         </div>
+
+        {/* Boolean Operator Helper Toolbar */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+          <span className="text-blue-200 font-semibold mr-1 flex items-center gap-1">
+            <Code2 className="w-3.5 h-3.5 text-amber-300" />
+            Sisipkan Operator Boolean:
+          </span>
+          <button
+            type="button"
+            onClick={() => handleInsertOperator(" AND ")}
+            className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-amber-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
+            title="Irisan Wajib: Kedua istilah harus ada dalam literatur (contoh: K3 AND Data Center)"
+          >
+            + AND
+          </button>
+          <button
+            type="button"
+            onClick={() => handleInsertOperator(" OR ")}
+            className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-blue-200 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
+            title="Pilihan / Sinonim: Salah satu istilah cukup (contoh: 'data center' OR 'server farm')"
+          >
+            + OR
+          </button>
+          <button
+            type="button"
+            onClick={() => handleInsertOperator(" NOT ")}
+            className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-rose-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
+            title="Pengecualian: Buang literatur yang memuat istilah ini"
+          >
+            + NOT
+          </button>
+          <button
+            type="button"
+            onClick={handleWrapQuotes}
+            className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-emerald-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
+            title="Frasa Tepat: Bungkus kata kunci dengan tanda kutip ganda"
+          >
+            &quot;Frasa Tepat&quot;
+          </button>
+          <button
+            type="button"
+            onClick={handleWrapParentheses}
+            className="px-2.5 py-0.5 rounded-lg bg-white/15 hover:bg-white/25 text-purple-300 font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
+            title="Kelompok: Bungkus dengan tanda kurung ( ... )"
+          >
+            ( Kelompok )
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowBooleanHelp(!showBooleanHelp)}
+            className="ml-auto text-blue-200 hover:text-white underline font-semibold flex items-center gap-1 cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>{showBooleanHelp ? "Tutup Panduan" : "Panduan Boolean Scopus"}</span>
+          </button>
+        </div>
+
+        {/* Collapsible Boolean Help Card */}
+        {showBooleanHelp && (
+          <div className="p-4 rounded-2xl bg-white/10 border border-white/20 text-xs space-y-2 backdrop-blur-md animate-in fade-in">
+            <h4 className="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
+              <HelpCircle className="w-4 h-4" />
+              Panduan Pencarian Boolean (Standar Scopus / Google Scholar / UNY)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-blue-100">
+              <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
+                <strong className="text-amber-300">1. Operator AND (Irisan Wajib):</strong>
+                <p className="mt-0.5">Memastikan kedua konsep wajib ada di dokumen. Misal: <code className="text-amber-200 font-mono">K3 AND &quot;Data Center&quot;</code> hanya mengambil artikel keselamatan kerja khusus pada fasilitas data center.</p>
+              </div>
+              <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
+                <strong className="text-blue-200">2. Operator OR (Sinonim):</strong>
+                <p className="mt-0.5">Memperluas padanan kata ilmiah. Misal: <code className="text-blue-200 font-mono">(&quot;data center&quot; OR &quot;server farm&quot;)</code>.</p>
+              </div>
+              <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
+                <strong className="text-emerald-300">3. Tanda Kutip &quot;...&quot; (Frasa Tepat):</strong>
+                <p className="mt-0.5">Mencegah kata terpecah secara terpisah. Misal: <code className="text-emerald-200 font-mono">&quot;keselamatan kerja&quot;</code> bukan sekadar kata &quot;kerja&quot; acak.</p>
+              </div>
+              <div className="bg-black/20 p-2.5 rounded-xl border border-white/10">
+                <strong className="text-purple-300">4. Otomatisasi Cerdas:</strong>
+                <p className="mt-0.5">Jika Anda hanya mengetik <code className="text-purple-200 font-mono">K3 Data Center</code>, sistem otomatis mengubahnya menjadi irisan Boolean <code className="text-purple-200 font-mono">K3 AND &quot;Data Center&quot;</code> dan menerjemahkan ke istilah internasional!</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Suggestion Pills */}
         <div className="space-y-2 pt-1">
@@ -266,18 +380,44 @@ export function LiteratureSearchDirect({
       {/* When Network is Loaded */}
       {hasGraph ? (
         <div className="space-y-6">
-          {/* Active Searched Topic Banner */}
+          {/* Active Searched Topic & Boolean Logic Banner */}
           {activeSearchedTopic && (
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
-                <span className="text-slate-700 dark:text-slate-300">
-                  Topik Literatur: <strong className="text-blue-700 dark:text-blue-300 font-extrabold text-sm">&quot;{activeSearchedTopic}&quot;</strong>
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-xs space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+                  <span className="text-slate-800 dark:text-slate-200">
+                    Hasil Pemetaan untuk: <strong className="text-blue-700 dark:text-blue-300 font-extrabold text-sm">&quot;{activeSearchedTopic}&quot;</strong>
+                  </span>
+                </div>
+                <span className="text-slate-600 dark:text-slate-400 font-semibold text-[11px]">
+                  {articles.length} Artikel Ilmiah Terverifikasi &bull; {nodes.length} Kata Kunci &bull; {edges.length} Tautan Relasi
                 </span>
               </div>
-              <span className="text-slate-500 font-semibold text-[11px]">
-                {articles.length} Artikel Ilmiah Terindeks &bull; {nodes.length} Kata Kunci &bull; {edges.length} Tautan Relasi
-              </span>
+
+              {currentBooleanQuery && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-blue-100 dark:border-slate-800">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-bold text-[10px] tracking-wide">
+                    LOGIKA BOOLEAN
+                  </span>
+                  {currentFacets.length > 1 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 text-[10px]">Irisan Konsep:</span>
+                      {currentFacets.map((facet, idx) => (
+                        <span
+                          key={facet}
+                          className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-[10px] text-blue-700 dark:text-blue-300"
+                        >
+                          {facet} {idx < currentFacets.length - 1 ? "∩" : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="text-[11px] text-slate-500 font-mono truncate max-w-full" title={currentBooleanQuery}>
+                    Query: <code className="text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">{currentBooleanQuery}</code>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

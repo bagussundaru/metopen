@@ -68,6 +68,16 @@ export const CIVIL_SYNONYMS: Record<string, string> = {
   "data center network": "data center networks",
   "server farm": "server farms",
   "cooling systems": "cooling system",
+  "k3": "occupational safety (K3)",
+  "keselamatan kerja": "occupational safety (K3)",
+  "keselamatan dan kesehatan kerja": "occupational safety (K3)",
+  "occupational health and safety": "occupational safety (K3)",
+  "occupational safety and health": "occupational safety (K3)",
+  "workplace safety": "occupational safety (K3)",
+  "occupational health": "occupational safety (K3)",
+  "personal protective equipment": "personal protective equipment (APD)",
+  "apd": "personal protective equipment (APD)",
+  "ppe": "personal protective equipment (APD)",
 };
 
 /**

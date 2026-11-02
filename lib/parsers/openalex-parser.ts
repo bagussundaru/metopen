@@ -1,7 +1,8 @@
 import Graph from "graphology";
 import louvain from "graphology-communities-louvain";
 import { VosNode, VosEdge, VosMapResult } from "./vosviewer-parser";
-import { normalizeKeyword, CIVIL_STOP_WORDS, translateSearchQuery } from "./thesaurus";
+import { normalizeKeyword, CIVIL_STOP_WORDS } from "./thesaurus";
+import { parseAndExpandBooleanQuery } from "./boolean-query";
 
 export interface DiscoveredArticle {
   id: string;
@@ -16,6 +17,9 @@ export interface DiscoveredArticle {
 
 export interface DirectMapResult extends VosMapResult {
   query: string;
+  booleanQuery?: string;
+  facets?: string[];
+  isExplicitBoolean?: boolean;
   totalWorksFound: number;
   articles: DiscoveredArticle[];
 }
@@ -157,7 +161,8 @@ export async function fetchOpenAlexWorks(
   const cleanQuery = query.trim();
   if (!cleanQuery) return [];
 
-  const searchQuery = translateSearchQuery(cleanQuery);
+  const parsed = parseAndExpandBooleanQuery(cleanQuery);
+  const searchQuery = parsed.booleanQuery;
 
   try {
     // IMPORTANT: DO NOT add &sort=cited_by_count:desc because OpenAlex will discard
@@ -415,8 +420,13 @@ export function buildNetworkFromOpenAlexWorks(
   const maxYear = years.length > 0 ? Math.max(...years) : 2024;
   const clusterNumbers = Array.from(new Set(nodes.map((n) => n.cluster))).sort((a, b) => a - b);
 
+  const parsed = parseAndExpandBooleanQuery(query);
+
   return {
     query,
+    booleanQuery: parsed.booleanQuery,
+    facets: parsed.facets,
+    isExplicitBoolean: parsed.isExplicitBoolean,
     totalWorksFound: rawWorks.length,
     articles,
     nodes,
