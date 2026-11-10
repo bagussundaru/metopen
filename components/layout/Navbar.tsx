@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, FileSpreadsheet } from "lucide-react";
+import { BookOpen, FileSpreadsheet, GraduationCap } from "lucide-react";
 
 export function Navbar() {
   return (
@@ -21,18 +21,29 @@ export function Navbar() {
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-              Metodologi Penelitian & Seminar Proposal (Standar Pascasarjana & Scopus)
+              Metodologi Penelitian &amp; Seminar Proposal (Standar Pascasarjana &amp; Scopus)
             </p>
           </div>
         </Link>
 
         <nav className="flex items-center gap-2 sm:gap-4">
           <Link
+            href="/tasks"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 transition-all shadow-xs"
+          >
+            <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span>Tugas Bibliometrik</span>
+            <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-full font-extrabold hidden sm:inline">
+              Tugas 1 &amp; 2
+            </span>
+          </Link>
+
+          <Link
             href="/guide"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <BookOpen className="w-4 h-4 text-blue-500" />
-            <span>Panduan & Contoh</span>
+            <span>Panduan &amp; Contoh</span>
           </Link>
 
           <a

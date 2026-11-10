@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCanvasStore } from "@/lib/store/canvas-store";
 import { CanvasCard } from "@/components/dashboard/CanvasCard";
 import { ImportModal } from "@/components/dashboard/ImportExportModal";
@@ -15,6 +16,8 @@ import {
   FileSpreadsheet,
   Lightbulb,
   GraduationCap,
+  BookOpen,
+  ArrowRight,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -94,18 +97,51 @@ export default function HomePage() {
         </div>
 
         {/* Local Storage & Privacy Notice Banner */}
-        <div className="mb-8 p-4 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-blue-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-blue-900 dark:text-blue-200">
+        <div className="mb-6 p-4 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-blue-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-blue-900 dark:text-blue-200">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 flex-shrink-0">
               <HardDrive className="w-4 h-4" />
             </div>
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">
-                Penyimpanan Mandiri & Privasi Aman (Local-First)
+                Penyimpanan Mandiri &amp; Privasi Aman (Local-First)
               </p>
               <p className="text-slate-600 dark:text-slate-400 text-[11px]">
                 Semua draf tersimpan di browser Anda tanpa registrasi akun. Gunakan tombol &quot;Unduh JSON&quot; untuk mencadangkan atau memindahkan draf antar laptop.
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Modul Penugasan Kuliah Metodologi Penelitian */}
+        <div className="mb-8 p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border-2 border-amber-300 dark:border-amber-800 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wide">
+                  Tugas Kuliah S2 Teknik Sipil
+                </span>
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Dosen Pengampu: Dr.-Ing. Ir. Satoto E. Nayono, M.Eng., M.Sc.
+                </span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                Penugasan Analisis &amp; Rancangan Penelitian Berbasis Bibliometrik
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+                Aplikasi telah dilengkapi modul khusus untuk menyelesaikan <strong>Tugas 1 (Tabel Analisis 3 Paper Bibliometrik)</strong> dan <strong>Tugas 2 (Rancangan Penelitian Bibliometrik 7 Komponen &amp; PRISMA)</strong> lengkap dengan generator kueri Scopus dan ekspor PDF resmi siap kumpul.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <Link
+                href="/tasks"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              >
+                <BookOpen className="w-4 h-4 text-slate-950" />
+                <span>Buka Modul Tugas (Tugas 1 &amp; 2)</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
