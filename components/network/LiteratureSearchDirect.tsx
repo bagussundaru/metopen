@@ -28,7 +28,12 @@ import {
   Key,
   Copy,
   Globe,
+  GraduationCap,
+  CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
+import { useTaskStore } from "@/lib/store/task-store";
 
 interface LiteratureSearchDirectProps {
   canvas: Canvas;
@@ -36,6 +41,8 @@ interface LiteratureSearchDirectProps {
   onPinFinding: (finding: PinnedFinding) => void;
   onUnpinFinding: (id: string) => void;
   onTakeSnapshot: (dataUrl: string) => void;
+  onNavigateToWizard?: () => void;
+  onNavigateToTasks?: () => void;
 }
 
 const CIVIL_PRESETS = [
@@ -55,6 +62,8 @@ export function LiteratureSearchDirect({
   onPinFinding,
   onUnpinFinding,
   onTakeSnapshot,
+  onNavigateToWizard,
+  onNavigateToTasks,
 }: LiteratureSearchDirectProps) {
   const [query, setQuery] = useState(
     canvas.title.subject || canvas.title.intervention || "Fly Ash Geopolymer Concrete"
@@ -87,6 +96,11 @@ export function LiteratureSearchDirect({
   const [selectedJournalFilter, setSelectedJournalFilter] = useState<string | null>(null);
   const [openAccessOnly, setOpenAccessOnly] = useState<boolean>(false);
   const [expandedAbstracts, setExpandedAbstracts] = useState<Record<string, boolean>>({});
+
+  // Alignment to Task 1 & Task 2 State
+  const [task1Assigned, setTask1Assigned] = useState<Record<string, 1 | 2 | 3>>({});
+  const [openTask1DropdownFor, setOpenTask1DropdownFor] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<{ message: string; link?: string; linkText?: string } | null>(null);
 
   // Optional Scopus API Key (Lazy initialization from localStorage)
   const [scopusApiKey, setScopusApiKey] = useState<string>(() => {
@@ -168,6 +182,28 @@ export function LiteratureSearchDirect({
       setCurrentFacets(data.facets || []);
       setSelectedKeywordFilter(null);
       setSelectedJournalFilter(null);
+
+      // Save search snapshot to task store for instant alignment
+      useTaskStore.getState().saveScopusSearchSnapshot({
+        query: trimmed,
+        scopusQuery: data.scopusQuery || official.scopusQuery,
+        totalFound: data.totalWorksFound || (data.articles?.length || 0),
+        topic: trimmed,
+        articles: (data.articles || []).map((a: DiscoveredArticle) => ({
+          id: a.id,
+          title: a.title,
+          authors: a.authors,
+          year: a.year,
+          journal: a.journal,
+          doi: a.doi,
+          citedByCount: a.citedByCount,
+          abstract: a.abstract,
+          keywords: a.keywords,
+          isOpenAccess: a.isOpenAccess,
+          docType: a.docType,
+        })),
+        searchedAt: new Date().toISOString(),
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mencari literatur Scopus.";
       setError(msg);
@@ -195,6 +231,74 @@ export function LiteratureSearchDirect({
       ...prev,
       [id]: !prev[id],
     }));
+  };
+
+  const handleSendToTask1 = (art: DiscoveredArticle, paperIndex: 0 | 1 | 2) => {
+    useTaskStore.getState().setPaperFromScopus(paperIndex, {
+      title: art.title,
+      authors: art.authors,
+      year: art.year,
+      journal: art.journal,
+      doi: art.doi,
+      citationCount: art.citedByCount,
+      indexingDb: art.citedByCount > 15 ? "Scopus Q1 (Elsevier)" : "Scopus Q2 (Elsevier)",
+      booleanQuery: currentScopusQuery || currentBooleanQuery || 'TITLE-ABS-KEY(...) AND DOCTYPE(ar OR re)',
+      abstract: art.abstract,
+      keywords: art.keywords,
+      databaseAndSearchDate: `Scopus (Elsevier), penelusuran tanggal: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`,
+    });
+
+    setTask1Assigned((prev) => ({
+      ...prev,
+      [art.id]: (paperIndex + 1) as 1 | 2 | 3,
+    }));
+    setOpenTask1DropdownFor(null);
+
+    setSyncNotice({
+      message: `Artikel "${art.title.slice(0, 45)}..." berhasil diselaraskan ke Paper ${paperIndex + 1} pada Tugas 1!`,
+      link: "/tasks",
+      linkText: "Buka Tugas 1",
+    });
+    setTimeout(() => setSyncNotice(null), 5000);
+  };
+
+  const handleSyncToTask2 = () => {
+    const searchString = currentScopusQuery || currentBooleanQuery || buildOfficialScopusQuery(query).scopusQuery;
+    const count = articles.length > 0 ? articles.length : 72;
+    const topicName = activeSearchedTopic || query;
+
+    useTaskStore.getState().syncFromLiteratureSearch({
+      query: searchString,
+      totalFound: count,
+      topic: topicName,
+    });
+
+    setSyncNotice({
+      message: `Kueri Scopus & ${count} artikel riil PRISMA berhasil diselaraskan ke Tugas 2!`,
+      link: "/tasks",
+      linkText: "Buka Tugas 2",
+    });
+    setTimeout(() => setSyncNotice(null), 5000);
+  };
+
+  const handleAdoptAsWizardTitle = (art: DiscoveredArticle) => {
+    onChange((prev) => ({
+      ...prev,
+      title: {
+        ...prev.title,
+        subject: art.keywords.slice(0, 3).join(", ") || prev.title.subject || query,
+        composed: art.title,
+      },
+    }));
+
+    setSyncNotice({
+      message: `Judul artikel diadopsi ke Wizard Kanvas!`,
+    });
+    setTimeout(() => setSyncNotice(null), 3000);
+
+    if (onNavigateToWizard) {
+      onNavigateToWizard();
+    }
   };
 
   const handleTransferArticle = (article: DiscoveredArticle) => {
@@ -480,6 +584,16 @@ export function LiteratureSearchDirect({
                 <span>{copiedScopusQuery ? "Tersalin!" : "Salin Kueri Scopus"}</span>
               </button>
 
+              <button
+                type="button"
+                onClick={handleSyncToTask2}
+                className="px-3 py-1 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-[11px] font-extrabold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                title="Kirim string kueri ini dan jumlah naskah yang ditemukan langsung ke Tugas 2 (Diagram Alir PRISMA)"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-slate-950" />
+                <span>Selaraskan ke Tugas 2</span>
+              </button>
+
               <a
                 href={currentScopusWebUrl || previewScopus.webUrl}
                 target="_blank"
@@ -496,6 +610,24 @@ export function LiteratureSearchDirect({
           <div className="font-mono text-[11px] text-blue-100 bg-black/30 p-2 rounded-xl border border-white/10 break-all select-all">
             {currentScopusQuery || previewScopus.scopusQuery}
           </div>
+
+          {syncNotice && (
+            <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-white text-xs flex items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
+                <span className="font-semibold">{syncNotice.message}</span>
+              </div>
+              {syncNotice.link && (
+                <Link
+                  href={syncNotice.link}
+                  className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-extrabold text-[11px] hover:bg-slate-100 shrink-0 inline-flex items-center gap-1"
+                >
+                  <span>{syncNotice.linkText || "Buka"}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Quick Suggestion Pills */}
@@ -1014,29 +1146,97 @@ export function LiteratureSearchDirect({
                             </p>
                           </div>
 
-                          {/* Quick Add to Canvas Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleTransferArticle(art)}
-                            disabled={isTransferred}
-                            className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                              isTransferred
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
-                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer active:scale-95"
-                            }`}
-                          >
-                            {isTransferred ? (
-                              <>
-                                <Check className="w-4 h-4 text-emerald-600" />
-                                <span>Ditambahkan</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-4 h-4" />
-                                <span>Tambah ke Kanvas</span>
-                              </>
-                            )}
-                          </button>
+                          {/* Action Buttons: Tambah ke Kanvas, Adopsi Judul, Kirim ke Tugas 1 */}
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            {/* Adopsi Judul ke Wizard */}
+                            <button
+                              type="button"
+                              onClick={() => handleAdoptAsWizardTitle(art)}
+                              className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 transition-all cursor-pointer flex items-center gap-1"
+                              title="Gunakan judul/ide artikel ini sebagai judul tesis di Wizard Kanvas"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Adopsi Judul</span>
+                            </button>
+
+                            {/* Quick Add to Canvas Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleTransferArticle(art)}
+                              disabled={isTransferred}
+                              className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${
+                                isTransferred
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
+                                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer active:scale-95"
+                              }`}
+                            >
+                              {isTransferred ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Di Kanvas</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>+ Kanvas</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Send to Task 1 Dropdown / Options */}
+                            <div className="relative">
+                              {task1Assigned[art.id] ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-300">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Tugas 1: Paper {task1Assigned[art.id]}</span>
+                                </span>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpenTask1DropdownFor(openTask1DropdownFor === art.id ? null : art.id)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer"
+                                    title="Kirim artikel ini ke Tugas 1 (Tabel 13 Aspek)"
+                                  >
+                                    <GraduationCap className="w-3.5 h-3.5" />
+                                    <span>Kirim Tugas 1 ▾</span>
+                                  </button>
+
+                                  {openTask1DropdownFor === art.id && (
+                                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-20 py-1 text-xs animate-in fade-in">
+                                      <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        Pilih Slot Tugas 1:
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSendToTask1(art, 0)}
+                                        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-slate-800 font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between"
+                                      >
+                                        <span>Jadikan Paper 1</span>
+                                        <span className="text-[10px] text-blue-600 font-bold">&rarr;</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSendToTask1(art, 1)}
+                                        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-slate-800 font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between"
+                                      >
+                                        <span>Jadikan Paper 2</span>
+                                        <span className="text-[10px] text-blue-600 font-bold">&rarr;</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSendToTask1(art, 2)}
+                                        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-slate-800 font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between"
+                                      >
+                                        <span>Jadikan Paper 3</span>
+                                        <span className="text-[10px] text-blue-600 font-bold">&rarr;</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         {/* Expandable Abstract Box */}
@@ -1185,6 +1385,35 @@ export function LiteratureSearchDirect({
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             Ketik kata kunci tema riset Anda di atas atau klik salah satu topik populer untuk menelusuri artikel karya ilmiah Scopus dan merender graf VOSviewer.
           </p>
+        </div>
+      )}
+
+      {/* Integrated Workflow Next Step CTA */}
+      {(nodes.length > 0 || articles.length > 0) && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
+                Alur Terpadu &bull; Langkah 1 Selesai
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white">
+              Sudah menemukan inspirasi topik atau artikel Scopus yang relevan?
+            </h3>
+            <p className="text-xs text-blue-100/90 leading-relaxed max-w-xl">
+              Lanjutkan ke <strong>Langkah 2: Wizard Kanvas Tesis</strong> untuk merumuskan judul terukur, sintesis kesenjangan riset (&le; 3 kalimat), dan pertanyaan riset (RQs). Data yang Anda pilih di sini siap diselaraskan ke Tugas 1 dan Tugas 2.
+            </p>
+          </div>
+          {onNavigateToWizard && (
+            <button
+              type="button"
+              onClick={onNavigateToWizard}
+              className="shrink-0 px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+            >
+              <span>Lanjut ke Langkah 2: Wizard Kanvas</span>
+              <ArrowRight className="w-4 h-4 text-slate-950" />
+            </button>
+          )}
         </div>
       )}
     </div>

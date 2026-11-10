@@ -1,6 +1,7 @@
 "use client";
 
 import { useTaskStore } from "@/lib/store/task-store";
+import { useCanvasStore } from "@/lib/store/canvas-store";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Task1PaperAnalysis } from "@/components/tasks/Task1PaperAnalysis";
@@ -11,13 +12,25 @@ import {
   GraduationCap,
   Download,
   Upload,
+  Network,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function TasksPage() {
-  const { activeTaskTab, setActiveTaskTab, exportTasksAsJson, importTasksFromJson } = useTaskStore();
+  const {
+    activeTaskTab,
+    setActiveTaskTab,
+    exportTasksAsJson,
+    importTasksFromJson,
+    syncFromCanvas,
+  } = useTaskStore();
+  const { canvases, activeCanvasId } = useCanvasStore();
   const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  const activeCanvas = canvases.find((c) => c.id === activeCanvasId) || canvases[0];
 
   const handleDownloadBackup = () => {
     const jsonStr = exportTasksAsJson();
@@ -99,6 +112,98 @@ export default function TasksPage() {
             </label>
           </div>
         </div>
+
+        {/* 3-Step Guided Workflow Banner */}
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Urutan Alur Kerja Terpadu Riset Pascasarjana:
+            </span>
+            {activeCanvas && (
+              <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold truncate max-w-sm">
+                Kanvas Terhubung: {activeCanvas.title.composed || activeCanvas.title.subject || "Draf Tesis"}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+            {/* Step 1 */}
+            <Link
+              href={activeCanvas ? `/editor/${activeCanvas.id}` : "/"}
+              className="p-3 rounded-2xl bg-slate-50 hover:bg-blue-50/60 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-3 group"
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center shrink-0">
+                <Network className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 flex items-center gap-1">
+                  <span>1. Peta Literatur Scopus</span>
+                  <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className="text-[11px] text-slate-500 truncate">Cari judul &amp; kirim 3 paper Scopus</p>
+              </div>
+            </Link>
+
+            {/* Step 2 */}
+            <Link
+              href={activeCanvas ? `/editor/${activeCanvas.id}` : "/"}
+              className="p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-3 group"
+            >
+              <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 flex items-center gap-1">
+                  <span>2. Wizard Kanvas Tesis</span>
+                  <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className="text-[11px] text-slate-500 truncate">Rumuskan Judul, Gap &amp; 5–7 RQs</p>
+              </div>
+            </Link>
+
+            {/* Step 3 (Current) */}
+            <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border-2 border-amber-400 dark:border-amber-600 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center shrink-0">
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-black text-slate-950 dark:text-amber-200 flex items-center gap-1.5">
+                  <span>3. Selaraskan Tugas 1 &amp; 2</span>
+                  <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 text-[9px] font-black uppercase">
+                    Aktif
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 truncate">
+                  Ekspor PDF Tugas 1 &amp; Tugas 2
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sync from Canvas Banner */}
+        {activeCanvas && (
+          <div className="p-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-200">
+              <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+              <span>
+                Tersedia rumusan dari Kanvas aktif: <strong>{activeCanvas.title.composed || activeCanvas.title.subject}</strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                syncFromCanvas(activeCanvas);
+                setImportStatus("Data berhasil ditarik dari Kanvas aktif ke Tugas 2!");
+                setTimeout(() => setImportStatus(null), 3000);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Tarik Data Kanvas ke Tugas 2</span>
+            </button>
+          </div>
+        )}
 
         {/* Big Tab Switcher for Tugas 1 vs Tugas 2 */}
         <div className="p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 flex items-center gap-2">

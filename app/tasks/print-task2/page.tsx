@@ -4,16 +4,20 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { PrismaFlowDiagram } from "@/components/tasks/PrismaFlowDiagram";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+
+const emptySubscribe = () => () => {};
 
 export default function PrintTask2Page() {
   const { task2 } = useTaskStore();
-  const [currentDate, setCurrentDate] = useState<string>("");
+  const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const currentDate = isMounted
+    ? new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
   const fileNameSuggestion = `${task2.meta.nim || "NIM"}_Rancangan Bibliometrik.pdf`;
 
   useEffect(() => {
-    setCurrentDate(new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }));
     document.title = `${task2.meta.nim || "NIM"}_Rancangan Bibliometrik`;
   }, [task2.meta.nim]);
 

@@ -3,16 +3,20 @@
 import { useTaskStore } from "@/lib/store/task-store";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+
+const emptySubscribe = () => () => {};
 
 export default function PrintTask1Page() {
   const { task1 } = useTaskStore();
-  const [currentDate, setCurrentDate] = useState<string>("");
+  const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const currentDate = isMounted
+    ? new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
   const fileNameSuggestion = `${task1.meta.nim || "NIM"}_Analisis Artikel.pdf`;
 
   useEffect(() => {
-    setCurrentDate(new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }));
     // Set document title so browsers suggest this filename when saving as PDF
     document.title = `${task1.meta.nim || "NIM"}_Analisis Artikel`;
   }, [task1.meta.nim]);

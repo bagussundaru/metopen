@@ -23,9 +23,16 @@ import {
 interface LiteratureMapTabProps {
   canvas: Canvas;
   onChange: (updater: (prev: Canvas) => Canvas) => void;
+  onNavigateToWizard?: () => void;
+  onNavigateToTasks?: () => void;
 }
 
-export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
+export function LiteratureMapTab({
+  canvas,
+  onChange,
+  onNavigateToWizard,
+  onNavigateToTasks,
+}: LiteratureMapTabProps) {
   // Default to "search" so user directly searches and generates VOSviewer map without uploading!
   const [sourceMode, setSourceMode] = useState<"search" | "vosviewer" | "scopus">("search");
   const [viewMode, setViewMode] = useState<"network" | "overlay" | "table" | "methodology">("network");
@@ -180,6 +187,8 @@ export function LiteratureMapTab({ canvas, onChange }: LiteratureMapTabProps) {
           onPinFinding={handlePinFinding}
           onUnpinFinding={handleUnpinFinding}
           onTakeSnapshot={handleTakeSnapshot}
+          onNavigateToWizard={onNavigateToWizard}
+          onNavigateToTasks={onNavigateToTasks}
         />
       )}
 
