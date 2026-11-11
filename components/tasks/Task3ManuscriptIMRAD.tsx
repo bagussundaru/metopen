@@ -7,6 +7,7 @@ import {
   Check,
 } from "lucide-react";
 import { useState } from "react";
+import { OfficialKopSurat } from "./OfficialKopSurat";
 
 export function Task3ManuscriptIMRAD() {
   const { task1, task2 } = useTaskStore();
@@ -175,6 +176,11 @@ ${task1.papers
             Oleh: <strong>{studentName}</strong> (NIM: {nim}) &bull; Peminatan: {spec}
           </p>
         </div>
+      </div>
+
+      {/* Official Kop Surat for Print Mode */}
+      <div className="hidden print:block bg-white mb-6">
+        <OfficialKopSurat />
       </div>
 
       {/* IMRAD Sections */}

@@ -5,6 +5,7 @@ import { PrismaFlowDiagram } from "@/components/tasks/PrismaFlowDiagram";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
+import { OfficialKopSurat } from "@/components/tasks/OfficialKopSurat";
 
 const emptySubscribe = () => () => {};
 
@@ -55,57 +56,36 @@ export default function PrintTask2Page() {
       </div>
 
       {/* Official A4 Document Container */}
-      <div className="max-w-5xl mx-auto bg-white p-8 sm:p-14 shadow-lg rounded-2xl border border-slate-200 print:shadow-none print:border-none print:p-4 print:max-w-none text-slate-900 text-xs font-serif leading-relaxed space-y-6">
-        {/* Kop Surat Resmi UNY S2 Teknik Sipil */}
-        <div className="border-b-2 border-slate-900 pb-3 mb-6 flex items-center gap-4">
-          <div className="w-20 h-20 shrink-0 flex items-center justify-center font-bold text-[10px] text-center border border-slate-300 rounded-full font-sans">
-            UNY LOGO
-          </div>
-          <div className="text-center flex-1">
-            <h4 className="font-bold text-xs sm:text-sm tracking-wide uppercase">
-              Kementerian Pendidikan Tinggi, Sains, dan Teknologi
-            </h4>
-            <h3 className="font-extrabold text-sm sm:text-base tracking-wide uppercase">
-              Universitas Negeri Yogyakarta
-            </h3>
-            <p className="font-bold text-xs uppercase">
-              Departemen Pendidikan Teknik Sipil dan Perencanaan
-            </p>
-            <p className="font-semibold text-xs">
-              Program Studi Teknik Sipil Program Magister
-            </p>
-            <p className="text-[10px] italic text-slate-600">
-              Alamat: Kampus UNY Karangmalang, Yogyakarta 55281
-            </p>
-          </div>
-        </div>
+      <div className="max-w-5xl mx-auto bg-white p-8 sm:p-14 shadow-lg rounded-2xl border border-slate-200 print:shadow-none print:border-none print:p-2 print:max-w-none text-slate-900 text-xs font-serif leading-relaxed space-y-6">
+        {/* Official Kop Surat UNY */}
+        <OfficialKopSurat />
 
         {/* Title Header */}
         <div className="text-center mb-6 space-y-1">
-          <h2 className="font-extrabold text-base sm:text-lg tracking-tight uppercase underline">
-            RANCANGAN PENELITIAN BIBLIOMETRIK
+          <h2 className="font-bold text-sm sm:text-base tracking-tight text-slate-950 uppercase font-serif">
+            TUGAS 2: RANCANGAN PENELITIAN BIBLIOMETRIK
           </h2>
-          <p className="text-xs font-sans font-medium text-slate-700">
-            Tugas Mata Kuliah Metodologi Penelitian &bull; Dosen: Dr.-Ing. Ir. Satoto E. Nayono, M.Eng., M.Sc.
+          <p className="text-[11px] font-sans text-slate-600">
+            Mata Kuliah: Metodologi Penelitian &bull; Dosen Pengampu: Dr.-Ing. Ir. Satoto E. Nayono, M.Eng., M.Sc.
           </p>
         </div>
 
-        {/* Student Identity Block */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1 font-sans text-xs border border-slate-300 p-3.5 rounded-lg bg-slate-50/50">
-          <div>
-            <span className="font-bold w-36 inline-block">Nama Mahasiswa</span>
-            <span>: {task2.meta.studentName || "...................................................."}</span>
+        {/* Student Identity Block (Matches PDF) */}
+        <div className="mb-4 space-y-1 text-xs text-slate-900 font-sans">
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">Nama Mahasiswa</span>
+            <span>: {task2.meta.studentName || "Bagus Sundaru"}</span>
           </div>
-          <div>
-            <span className="font-bold w-36 inline-block">NIM</span>
-            <span>: {task2.meta.nim || "...................................................."}</span>
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">NIM</span>
+            <span>: {task2.meta.nim || "24052380001"}</span>
           </div>
-          <div>
-            <span className="font-bold w-36 inline-block">Peminatan Bidang</span>
-            <span>: {task2.meta.specialization || "Teknologi Struktur / PSDAL"}</span>
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">Peminatan Bidang</span>
+            <span>: {task2.meta.specialization || "Teknik Struktur / Interdisipliner"}</span>
           </div>
-          <div>
-            <span className="font-bold w-36 inline-block">Tahun Akademik</span>
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">Tahun Akademik</span>
             <span>: {task2.meta.academicYear || "Gasal 2026/2027"}</span>
           </div>
         </div>

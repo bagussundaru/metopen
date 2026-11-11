@@ -7,6 +7,7 @@ import {
   Check,
 } from "lucide-react";
 import { useState } from "react";
+import { OfficialKopSurat } from "./OfficialKopSurat";
 
 export function ThesisOutlineView() {
   const { task1, task2 } = useTaskStore();
@@ -183,6 +184,11 @@ BAB V: KESIMPULAN DAN SARAN
             <span>Peminatan: <strong>{task2.meta.specialization}</strong></span>
           </div>
         </div>
+      </div>
+
+      {/* Official Kop Surat for Print Mode */}
+      <div className="hidden print:block bg-white mb-6">
+        <OfficialKopSurat />
       </div>
 
       {/* Chapters Breakdown */}

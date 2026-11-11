@@ -4,6 +4,7 @@ import { useTaskStore } from "@/lib/store/task-store";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
+import { OfficialKopSurat } from "@/components/tasks/OfficialKopSurat";
 
 const emptySubscribe = () => () => {};
 
@@ -55,58 +56,30 @@ export default function PrintTask1Page() {
       </div>
 
       {/* Official A4 Document Container */}
-      <div className="max-w-6xl mx-auto bg-white p-8 sm:p-12 shadow-lg rounded-2xl border border-slate-200 print:shadow-none print:border-none print:p-4 print:max-w-none text-slate-900 text-xs font-serif leading-relaxed">
-        {/* Kop Surat Resmi UNY S2 Teknik Sipil */}
-        <div className="border-b-2 border-slate-900 pb-3 mb-6 flex items-center gap-4">
-          <div className="w-20 h-20 shrink-0 flex items-center justify-center font-bold text-[10px] text-center border border-slate-300 rounded-full">
-            UNY LOGO
-          </div>
-          <div className="text-center flex-1">
-            <h4 className="font-bold text-xs sm:text-sm tracking-wide uppercase">
-              Kementerian Pendidikan Tinggi, Sains, dan Teknologi
-            </h4>
-            <h3 className="font-extrabold text-sm sm:text-base tracking-wide uppercase">
-              Universitas Negeri Yogyakarta
-            </h3>
-            <p className="font-bold text-xs uppercase">
-              Departemen Pendidikan Teknik Sipil dan Perencanaan
-            </p>
-            <p className="font-semibold text-xs">
-              Program Studi Teknik Sipil Program Magister
-            </p>
-            <p className="text-[10px] italic text-slate-600">
-              Alamat: Kampus UNY Karangmalang, Yogyakarta 55281
-            </p>
-          </div>
-        </div>
+      <div className="max-w-6xl mx-auto bg-white p-8 sm:p-12 shadow-lg rounded-2xl border border-slate-200 print:shadow-none print:border-none print:p-2 print:max-w-none text-slate-900 text-xs font-serif leading-relaxed">
+        {/* Official Kop Surat UNY */}
+        <OfficialKopSurat />
 
-        {/* Title & Metadata Header */}
-        <div className="text-center mb-6 space-y-1">
-          <h2 className="font-extrabold text-sm sm:text-base tracking-tight uppercase underline">
+        {/* Title Header */}
+        <div className="text-center mb-5">
+          <h2 className="font-bold text-sm sm:text-base tracking-tight text-slate-950 font-serif">
             Tabel Analisis Paper Bibliometrik
           </h2>
-          <p className="text-[11px] font-sans font-medium text-slate-700">
-            Tugas Mata Kuliah Metodologi Penelitian &bull; Dosen: Dr.-Ing. Ir. Satoto E. Nayono, M.Eng., M.Sc.
-          </p>
         </div>
 
-        {/* Student Identity Block */}
-        <div className="mb-6 grid grid-cols-2 gap-x-6 gap-y-1 font-sans text-xs border border-slate-300 p-3 rounded-lg bg-slate-50/50">
-          <div>
-            <span className="font-bold w-36 inline-block">Nama Mahasiswa</span>
-            <span>: {task1.meta.studentName || "...................................................."}</span>
+        {/* Student Identity Block (Matches Page 3 PDF) */}
+        <div className="mb-4 space-y-1 text-xs text-slate-900 font-sans">
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">Nama Mahasiswa</span>
+            <span>: {task1.meta.studentName || "Bagus Sundaru"}</span>
           </div>
-          <div>
-            <span className="font-bold w-36 inline-block">NIM</span>
-            <span>: {task1.meta.nim || "...................................................."}</span>
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">NIM</span>
+            <span>: {task1.meta.nim || "24052380001"}</span>
           </div>
-          <div>
-            <span className="font-bold w-36 inline-block">Peminatan</span>
-            <span>: {task1.meta.specialization || "Teknik Struktur / PSDAL"}</span>
-          </div>
-          <div>
-            <span className="font-bold w-36 inline-block">Tahun Akademik</span>
-            <span>: {task1.meta.academicYear || "Gasal 2026/2027"}</span>
+          <div className="flex">
+            <span className="w-36 inline-block font-semibold">Peminatan</span>
+            <span>: {task1.meta.specialization || "Teknik Struktur/PSDAL"}</span>
           </div>
         </div>
 
@@ -114,11 +87,11 @@ export default function PrintTask1Page() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse border border-slate-900 font-sans text-[11px] leading-snug">
             <thead>
-              <tr className="bg-slate-200 border-b border-slate-900 font-bold text-slate-900">
-                <th className="p-2.5 w-1/4 border border-slate-900 text-center">Aspek Analisis</th>
-                <th className="p-2.5 w-1/4 border border-slate-900 text-center">Artikel 1</th>
-                <th className="p-2.5 w-1/4 border border-slate-900 text-center">Artikel 2</th>
-                <th className="p-2.5 w-1/4 border border-slate-900 text-center">Artikel 3</th>
+              <tr className="bg-[#11324d] text-white border-b border-slate-900 font-bold">
+                <th className="p-2.5 w-[22%] border border-slate-900 text-center font-bold text-white">Aspek</th>
+                <th className="p-2.5 w-[26%] border border-slate-900 text-center font-bold text-white">Artikel 1</th>
+                <th className="p-2.5 w-[26%] border border-slate-900 text-center font-bold text-white">Artikel 2</th>
+                <th className="p-2.5 w-[26%] border border-slate-900 text-center font-bold text-white">Artikel 3</th>
               </tr>
             </thead>
             <tbody>
