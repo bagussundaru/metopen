@@ -6,6 +6,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Task1PaperAnalysis } from "@/components/tasks/Task1PaperAnalysis";
 import { Task2ResearchDesign } from "@/components/tasks/Task2ResearchDesign";
+import { Task3ManuscriptIMRAD } from "@/components/tasks/Task3ManuscriptIMRAD";
+import { ThesisOutlineView } from "@/components/tasks/ThesisOutlineView";
 import {
   BookOpen,
   FileText,
@@ -205,32 +207,58 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* Big Tab Switcher for Tugas 1 vs Tugas 2 */}
-        <div className="p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 flex items-center gap-2">
+        {/* Big Tab Switcher for the 4 Coursework Milestones */}
+        <div className="p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 grid grid-cols-2 lg:grid-cols-4 gap-1.5">
           <button
             type="button"
             onClick={() => setActiveTaskTab("task1")}
-            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
               activeTaskTab === "task1"
                 ? "bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-300 shadow-md font-extrabold"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <BookOpen className="w-4 h-4 text-blue-600" />
-            <span>TUGAS 1: Analisis 3 Paper Bibliometrik (Tabel 13 Aspek)</span>
+            <BookOpen className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="truncate">1. Analisis 3 Paper (13 Aspek)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTaskTab("task2")}
-            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
               activeTaskTab === "task2"
                 ? "bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-md font-extrabold"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <FileText className="w-4 h-4 text-indigo-600" />
-            <span>TUGAS 2: Rancangan Penelitian Bibliometrik (7 Komponen &amp; PRISMA)</span>
+            <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span className="truncate">2. Rancangan (7 RQs &amp; PRISMA)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTaskTab("task3")}
+            className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTaskTab === "task3"
+                ? "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 shadow-md font-extrabold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span className="truncate">3. Naskah Lengkap (IMRAD)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTaskTab("thesis-outline")}
+            className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTaskTab === "thesis-outline"
+                ? "bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 shadow-md font-extrabold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="truncate">4. Outline Tesis (Bab I–V)</span>
           </button>
         </div>
 
@@ -239,6 +267,12 @@ export default function TasksPage() {
 
         {/* Tab 2 Content */}
         {activeTaskTab === "task2" && <Task2ResearchDesign />}
+
+        {/* Tab 3 Content */}
+        {activeTaskTab === "task3" && <Task3ManuscriptIMRAD />}
+
+        {/* Tab 4 Content */}
+        {activeTaskTab === "thesis-outline" && <ThesisOutlineView />}
       </main>
 
       <Footer />

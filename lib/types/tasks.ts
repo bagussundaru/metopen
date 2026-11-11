@@ -9,6 +9,8 @@
 export type CivilEngineeringSpecialization = "Teknik Struktur" | "PSDAL (Sumber Daya Air & Lingkungan)" | "Interdisipliner";
 export type SpecializationTrack = CivilEngineeringSpecialization;
 
+export type TaskTabType = "task1" | "task2" | "task3" | "thesis-outline";
+
 /**
  * Metadata mahasiswa pengumpul tugas
  */

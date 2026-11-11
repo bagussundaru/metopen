@@ -151,4 +151,84 @@ describe("Course Assignments: Task 1 and Task 2 Store & Templates", () => {
     expect(state.task2.urgencyAndImportance).toContain(canvas.background.sentences[0]);
     expect(state.task2.unansweredResearchGap).toBe(canvas.background.sentences[1]);
   });
+
+  it("injects top 3 Scopus articles simultaneously into Task 1 and syncs to Task 2", () => {
+    const store = useTaskStore.getState();
+    const articles = [
+      {
+        id: "art-1",
+        title: "Bibliometric Analysis of Geopolymer Concrete",
+        authors: "Ahmad et al.",
+        year: 2026,
+        journal: "Buildings",
+        citedByCount: 14,
+        doi: "10.3390/buildings16153051",
+      },
+      {
+        id: "art-2",
+        title: "Global research trends in biomass-derived geopolymers",
+        authors: "Musa et al.",
+        year: 2026,
+        journal: "Biomass Conversion",
+        citedByCount: 9,
+        doi: "10.1007/s13399-026-05421-2",
+      },
+      {
+        id: "art-3",
+        title: "Carbon curing strategies for recycled aggregate concrete",
+        authors: "Raza & Yuguang",
+        year: 2026,
+        journal: "Journal of Building Engineering",
+        citedByCount: 22,
+        doi: "10.1016/j.jobe.2025.117031",
+      },
+    ];
+
+    const result = store.injectTop3ScopusArticles(articles, 'TITLE-ABS-KEY("geopolymer")');
+    expect(result).toBe(true);
+
+    const state = useTaskStore.getState();
+    expect(state.task1.papers[0].title).toBe("Bibliometric Analysis of Geopolymer Concrete");
+    expect(state.task1.papers[1].title).toBe("Global research trends in biomass-derived geopolymers");
+    expect(state.task1.papers[2].title).toBe("Carbon curing strategies for recycled aggregate concrete");
+    expect(state.task2.booleanSearchString).toBe('TITLE-ABS-KEY("geopolymer")');
+    expect(state.task2.prisma.recordsIdentified).toBe(3);
+  });
+
+  it("loads K3 Data Center benchmark with 3 Scopus Q1 papers and 7 RQs with physical units", () => {
+    const store = useTaskStore.getState();
+    store.loadBenchmarkDataCenterTask1();
+    store.loadBenchmarkDataCenterTask2();
+
+    const state = useTaskStore.getState();
+    expect(state.task1.papers[0].title).toContain("Safety and Environmental Risk Assessment in Critical Mission Data Centers");
+    expect(state.task1.papers[1].title).toContain("Electronics Thermal Management in Information and Communications Technologies");
+    expect(state.task1.papers[1].authors).toContain("Garimella");
+    expect(state.task1.papers[2].title).toContain("Fan-noise reduction of data centre telecommunications' server racks");
+    expect(state.task1.papers[2].authors).toContain("Killeen");
+
+    expect(state.task2.researchQuestions.length).toBe(7);
+    expect(state.task2.researchQuestions[3]).toContain("≤ 24°C");
+    expect(state.task2.researchQuestions[4]).toContain("t ≤ 60 detik");
+    expect(state.task2.researchQuestions[5]).toContain("≥ 40%");
+    expect(state.task2.researchQuestions[6]).toContain("p < 0.05");
+  });
+
+  it("parses pasted citation text from Scopus web and assigns to paper", () => {
+    const store = useTaskStore.getState();
+    const rawText = `Bibliometric Analysis, Mechanical Properties, and Durability Performance of Fly Ash Based Geopolymer Concrete
+Ahmad J., Naqash M.T., Qureshi H.J., Alattyih W.
+Buildings, 16(15), 3051  2026
+10.3390/buildings16153051`;
+
+    const success = store.parseAndSetPaperFromText(0, rawText);
+    expect(success).toBe(true);
+
+    const paper = useTaskStore.getState().task1.papers[0];
+    expect(paper.title).toBe("Bibliometric Analysis, Mechanical Properties, and Durability Performance of Fly Ash Based Geopolymer Concrete");
+    expect(paper.authors).toBe("Ahmad J., Naqash M.T., Qureshi H.J., Alattyih W.");
+    expect(paper.journal).toContain("Buildings");
+    expect(paper.doi).toBe("10.3390/buildings16153051");
+    expect(paper.year).toBe(2026);
+  });
 });

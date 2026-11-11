@@ -17,8 +17,11 @@ export function Task2ResearchDesign() {
     task2,
     updateStudentMeta,
     updateTask2,
-    loadBenchmarkTask2,
+    loadBenchmarkDataCenterTask2,
+    loadBenchmarkGeopolymerTask2,
+    syncFromLiteratureSearch,
     resetTask2,
+    lastScopusSearch,
   } = useTaskStore();
 
   const handleUpdate = <K extends keyof ITask2ResearchDesign>(field: K, val: ITask2ResearchDesign[K]) => {
@@ -44,6 +47,15 @@ export function Task2ResearchDesign() {
     const updated = [...task2.researchQuestions];
     updated[idx] = text;
     handleUpdate("researchQuestions", updated);
+  };
+
+  const handleApplyScopusSearchToTask2 = () => {
+    if (!lastScopusSearch) return;
+    syncFromLiteratureSearch({
+      query: lastScopusSearch.scopusQuery || lastScopusSearch.query,
+      totalFound: lastScopusSearch.totalFound || lastScopusSearch.articles.length,
+      topic: lastScopusSearch.topic || lastScopusSearch.query,
+    });
   };
 
   return (
@@ -72,12 +84,21 @@ export function Task2ResearchDesign() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={loadBenchmarkTask2}
-              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              title="Muat contoh lengkap rancangan penelitian bibliometrik Teknik Sipil berstandar Scopus"
+              onClick={loadBenchmarkDataCenterTask2}
+              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Muat 7 RQs presisi dengan besaran fisik terukur & PRISMA K3 Data Center"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Muat Contoh Lengkap</span>
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              <span>🏢 Muat K3 Data Center (7 RQs &amp; PRISMA)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={loadBenchmarkGeopolymerTask2}
+              className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Muat contoh lengkap rancangan penelitian bibliometrik Geopolymer Concrete"
+            >
+              <span>🧱 Muat Geopolymer (Scopus Web)</span>
             </button>
 
             <Link
@@ -138,6 +159,30 @@ export function Task2ResearchDesign() {
           </div>
         </div>
       </div>
+
+      {/* Scopus Search Sync Banner for Task 2 */}
+      {lastScopusSearch && (
+        <div className="p-4 rounded-3xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in fade-in">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 text-indigo-950 dark:text-indigo-200 font-bold">
+              <span>🔍 Kueri Scopus Terakhir Terdeteksi:</span>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-200/60 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200 text-[10px] font-mono">
+                {lastScopusSearch.totalFound || lastScopusSearch.articles.length} Dokumen Ditemukan
+              </span>
+            </div>
+            <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px] break-all">
+              {lastScopusSearch.scopusQuery || lastScopusSearch.query}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyScopusSearchToTask2}
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+          >
+            <span>⚡ Terapkan ke Kueri &amp; PRISMA Tugas 2</span>
+          </button>
+        </div>
+      )}
 
       {/* 7 COMPONENTS FORM */}
       <div className="space-y-6">

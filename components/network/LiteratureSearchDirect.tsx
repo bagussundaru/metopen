@@ -31,6 +31,7 @@ import {
   GraduationCap,
   CheckCircle2,
   ArrowRight,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useTaskStore } from "@/lib/store/task-store";
@@ -279,6 +280,72 @@ export function LiteratureSearchDirect({
       linkText: "Buka Tugas 2",
     });
     setTimeout(() => setSyncNotice(null), 5000);
+  };
+
+  const handleInjectTop3ToTask1 = () => {
+    const listToInject = filteredArticles.length > 0 ? filteredArticles : articles;
+    if (!listToInject || listToInject.length === 0) {
+      setSyncNotice({
+        message: "Tidak ada artikel Scopus yang tersedia untuk diinjeksikan. Silakan lakukan pencarian Scopus terlebih dahulu.",
+      });
+      setTimeout(() => setSyncNotice(null), 4000);
+      return;
+    }
+
+    const scopusItems = listToInject.slice(0, 3).map((a) => ({
+      id: a.id,
+      title: a.title,
+      authors: a.authors,
+      year: a.year,
+      journal: a.journal,
+      doi: a.doi,
+      citedByCount: a.citedByCount,
+      abstract: a.abstract,
+      keywords: a.keywords,
+      isOpenAccess: a.isOpenAccess,
+      docType: a.docType,
+    }));
+
+    const success = useTaskStore
+      .getState()
+      .injectTop3ScopusArticles(scopusItems, currentScopusQuery || query);
+
+    if (success) {
+      const newAssigned: Record<string, 1 | 2 | 3> = { ...task1Assigned };
+      if (listToInject[0]) newAssigned[listToInject[0].id] = 1;
+      if (listToInject[1]) newAssigned[listToInject[1].id] = 2;
+      if (listToInject[2]) newAssigned[listToInject[2].id] = 3;
+      setTask1Assigned(newAssigned);
+
+      setSyncNotice({
+        message: `🎉 Berhasil! 3 Paper Scopus teratas otomatis diinjeksikan ke Tugas 1 (13 Aspek Paper 1, 2, dan 3) dan kueri Boolean disinkronkan ke Tugas 2!`,
+        link: "/tasks",
+        linkText: "Buka & Periksa Tugas 1 ➔",
+      });
+      setTimeout(() => setSyncNotice(null), 8000);
+    }
+  };
+
+  const handleLoadK3DataCenterPreset = () => {
+    useTaskStore.getState().loadBenchmarkDataCenterTask1();
+    useTaskStore.getState().loadBenchmarkDataCenterTask2();
+    setSyncNotice({
+      message: `🏢 3 Paper K3 Data Center (Ham & Hwang 2026, Garimella 2016, Killeen 2023) berhasil dimuat ke Tugas 1 & 7 RQs ke Tugas 2!`,
+      link: "/tasks",
+      linkText: "Buka Modul Tugas ➔",
+    });
+    setTimeout(() => setSyncNotice(null), 8000);
+  };
+
+  const handleLoadGeopolymerPreset = () => {
+    useTaskStore.getState().loadBenchmarkGeopolymerTask1();
+    useTaskStore.getState().loadBenchmarkGeopolymerTask2();
+    setSyncNotice({
+      message: `🧱 3 Paper Geopolymer Concrete (Ahmad et al. 2026, Musa et al. 2026, Raza & Yuguang 2026) berhasil dimuat ke Tugas 1 & 2!`,
+      link: "/tasks",
+      linkText: "Buka Modul Tugas ➔",
+    });
+    setTimeout(() => setSyncNotice(null), 8000);
   };
 
   const handleAdoptAsWizardTitle = (art: DiscoveredArticle) => {
@@ -618,13 +685,24 @@ export function LiteratureSearchDirect({
                 <span className="font-semibold">{syncNotice.message}</span>
               </div>
               {syncNotice.link && (
-                <Link
-                  href={syncNotice.link}
-                  className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-extrabold text-[11px] hover:bg-slate-100 shrink-0 inline-flex items-center gap-1"
-                >
-                  <span>{syncNotice.linkText || "Buka"}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                onNavigateToTasks ? (
+                  <button
+                    type="button"
+                    onClick={onNavigateToTasks}
+                    className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-extrabold text-[11px] hover:bg-slate-100 shrink-0 inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{syncNotice.linkText || "Buka"}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                ) : (
+                  <Link
+                    href={syncNotice.link}
+                    className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-extrabold text-[11px] hover:bg-slate-100 shrink-0 inline-flex items-center gap-1"
+                  >
+                    <span>{syncNotice.linkText || "Buka"}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )
               )}
             </div>
           )}
@@ -935,6 +1013,42 @@ export function LiteratureSearchDirect({
                   >
                     <Plus className="w-4 h-4" />
                     <span>Transfer 5 Teratas ke Kanvas</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleInjectTop3ToTask1}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-amber-500 hover:from-blue-700 hover:to-amber-600 text-white text-xs font-extrabold shadow-sm hover:shadow transition-all cursor-pointer active:scale-95"
+                    title="Injeksikan 3 paper Scopus teratas ke Tugas 1 (13 Aspek) dan selaraskan kueri Boolean ke Tugas 2"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-300" />
+                    <span>⚡ Injeksikan 3 Paper ke Tugas 1</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Academic Presets Bar for Tasks */}
+              <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2 text-amber-950 dark:text-amber-200">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="font-bold">Preset Tugas Perkuliahan:</span>
+                  <span className="text-amber-800 dark:text-amber-300 text-[11px]">Muat 3 paper bereputasi Scopus Q1 &amp; 7 RQs terstruktur lengkap:</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleLoadK3DataCenterPreset}
+                    className="px-3 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] shadow-xs transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="Muat 3 Paper K3 Data Center (Ham & Hwang 2026, Garimella 2016, Killeen 2023) & 7 RQs"
+                  >
+                    <span>🏢 Muat K3 Data Center (Tesis S2)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLoadGeopolymerPreset}
+                    className="px-3 py-1 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-900 dark:text-white font-bold text-[11px] border border-amber-300 dark:border-amber-700 shadow-xs transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="Muat 3 Paper Geopolymer Concrete (Ahmad et al. 2026, Musa et al. 2026, Raza & Yuguang 2026) sesuai Scopus Web"
+                  >
+                    <span>🧱 Muat Geopolymer (Scopus Web)</span>
                   </button>
                 </div>
               </div>
