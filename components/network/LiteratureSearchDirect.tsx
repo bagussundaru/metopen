@@ -47,14 +47,12 @@ interface LiteratureSearchDirectProps {
 }
 
 const CIVIL_PRESETS = [
-  { label: "Fly Ash Geopolymer Concrete", query: "Fly Ash Geopolymer Concrete" },
-  { label: "Bibliometric Geopolymer", query: "Bibliometric Geopolymer Concrete" },
-  { label: "K3 ∩ Data Center", query: "K3 Data Center" },
+  { label: "K3 Data Center Tier 3 & 4", query: "K3 Data Center Tier 3 4 FMEA" },
+  { label: "Data Center Thermal Telemetry", query: "Data Center Thermal Management Telemetry" },
+  { label: "Server Rack Noise Reduction", query: "Data Center Noise Reduction Acoustic" },
   { label: "K3 Proyek Konstruksi", query: "K3 Proyek Konstruksi" },
-  { label: "Kuat Lentur Balok Beton", query: "Kuat Lentur Balok Beton" },
-  { label: "Stabilisasi Tanah Lempung", query: "Stabilisasi Tanah Lempung" },
-  { label: "Alkali-Activated Materials", query: "Alkali-Activated Stabilization" },
-  { label: "Struktur Tahan Gempa", query: "Struktur Tahan Gempa" },
+  { label: "Struktur Fasilitas Kritis", query: "Critical Facility Infrastructure Reliability" },
+  { label: "Fly Ash Geopolymer Concrete", query: "Fly Ash Geopolymer Concrete" },
 ];
 
 export function LiteratureSearchDirect({
@@ -67,7 +65,7 @@ export function LiteratureSearchDirect({
   onNavigateToTasks,
 }: LiteratureSearchDirectProps) {
   const [query, setQuery] = useState(
-    canvas.title.subject || canvas.title.intervention || "Fly Ash Geopolymer Concrete"
+    canvas.title.subject || canvas.title.intervention || "K3 Data Center Tier 3 & 4"
   );
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [loading, setLoading] = useState(false);

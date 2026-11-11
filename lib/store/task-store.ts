@@ -99,8 +99,8 @@ interface TaskStoreState {
 export const useTaskStore = create<TaskStoreState>()(
   persist(
     (set, get) => ({
-      task1: createBenchmarkTask1CivilEngineering(), // Pre-fill with rich benchmark so user sees high standard immediately
-      task2: createBenchmarkTask2CivilEngineering(), // Pre-fill with complete research design
+      task1: createBenchmarkTask1DataCenterK3(), // Pre-fill with user's core thesis research: Data Center Tier 3 & 4 K3 FMEA
+      task2: createBenchmarkTask2DataCenterK3(), // Pre-fill with complete Data Center research design & 7 precise RQs
       activeTaskTab: "task1",
       isHydrated: false,
       lastScopusSearch: null,

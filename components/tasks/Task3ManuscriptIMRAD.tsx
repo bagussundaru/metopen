@@ -14,7 +14,7 @@ export function Task3ManuscriptIMRAD() {
 
   const title =
     task2.proposedTitle ||
-    "Pemetaan Bibliometrik dan Tinjauan Kritis Tren Riset Fasilitas Data Center (2005–2026)";
+    "Tingkat Kepatuhan K3 (%) dan Penurunan Risiko FMEA K3 di Lingkungan Data Center Tier 3 & 4 dengan Bahaya Tersembunyi";
 
   const studentName = task2.meta.studentName || "Bagus Sundaru";
   const nim = task2.meta.nim || "24052380001";

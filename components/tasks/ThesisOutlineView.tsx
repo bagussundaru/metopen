@@ -14,12 +14,12 @@ export function ThesisOutlineView() {
 
   const thesisTitle =
     task2.proposedTitle ||
-    "Integrasi Sistem Pemantauan Telemetri Lingkungan dan Mitigasi Risiko K3 Berbasis Sensor Real-Time pada Operasional Fasilitas Data Center";
+    "Tingkat Kepatuhan K3 (%) dan Penurunan Risiko FMEA K3 di Lingkungan Data Center Tier 3 & 4 dengan Bahaya Tersembunyi";
 
   const fullOutlineText = `DRAFT OUTLINE TESIS MAGISTER (S2) TEKNIK SIPIL
 Judul / Topik: ${thesisTitle}
-Penyusun: ${task2.meta.studentName || "[Nama Mahasiswa]"} (NIM: ${task2.meta.nim || "[NIM]"})
-Peminatan: ${task2.meta.specialization}
+Penyusun: ${task2.meta.studentName || "Bagus Sundaru"} (NIM: ${task2.meta.nim || "24052380001"})
+Peminatan: ${task2.meta.specialization} (Rekayasa Infrastruktur & Keselamatan Fasilitas Kritis)
 Mata Kuliah: Desain Penelitian / Metodologi Penelitian Teknik Sipil
 Dosen Pengampu: Dr.-Ing. Ir. Satoto E. Nayono, M.Eng., M.Sc.
 
@@ -27,91 +27,98 @@ Dosen Pengampu: Dr.-Ing. Ir. Satoto E. Nayono, M.Eng., M.Sc.
 BAB I: PENDAHULUAN
 ==================================================
 1.1 Latar Belakang Masalah
-    - Operasional fasilitas data center 24/7 misi kritis menuntut keandalan tinggi dan lingkungan kerja yang aman bagi teknisi.
-    - Urgensi pemantauan parameter fisik secara simultan: deviasi suhu ruang server (°C), akumulasi fluks termal (W/m²), dan intensitas kebisingan akustik kipas pendingin (dB).
-    - Research Gap: Belum terukurnya integrasi pengawasan K3 digital berbasis sensor telemetri IoT secara real-time di lapangan terhadap penurunan indeks risiko kecelakaan kerja.
+    - Operasional Data Center Tier 3 & 4 beroperasi 24/7/365 dengan tingkat ketersediaan tinggi (99.982% - 99.995%) dan beban pemeliharaan bersamaan tanpa henti (concurrently maintainable).
+    - Fasilitas ini menyimpan bahaya tersembunyi (hidden hazards): lonjakan micro-hotspots (suhu > 24°C) di lorong panas rak berdensitas tinggi, akumulasi fluks termal (W/m²), risiko thermal runaway bank baterai UPS, ancaman busur api listrik (arc-flash) pada panel distribusi daya (PDU/ATS), serta paparan kebisingan blower pendingin CRAH/CRAC (> 85 dB).
+    - Research Gap: Belum terukurnya efektivitas integrasi sistem pengawasan K3 digital berbasis sensor telemetri IoT secara in-situ real-time terhadap peningkatan tingkat kepatuhan K3 (%) dan penurunan skor Risk Priority Number (RPN) pada Failure Mode and Effects Analysis (FMEA).
 
-1.2 Rumusan Masalah (Research Questions)
+1.2 Rumusan Masalah (7 Research Questions Terukur)
     ${task2.researchQuestions.map((rq, i) => `${i + 1}. ${rq}`).join("\n    ")}
 
 1.3 Tujuan Penelitian
-    - Menganalisis struktur tren riset bibliometrik global K3 data center (2005–2026).
-    - Merancang arsitektur integrasi sensor telemetri multi-parameter IoT real-time di fasilitas data center.
-    - Menguji efektivitas sistem dalam menekan paparan suhu (≤ 24°C), kebisingan (≤ 85 dB), dan mempercepat respons mitigasi (t ≤ 60 detik).
-    - Mengevaluasi persentase reduksi indeks risiko FMEA (≥ 40%) dengan uji signifikansi statistik (p < 0.05).
+    - Memetakan struktur literatur bibliometrik global K3 data center Tier 3 & 4 menggunakan Scopus dan VOSviewer (2005–2026).
+    - Mengidentifikasi baseline paparan bahaya fisik tersembunyi (suhu °C, kebisingan dB, fluks termal) dan tingkat kepatuhan K3 eksisting.
+    - Merancang dan menguji arsitektur sistem telemetri multi-parameter berbasis IoT in-situ di lorong panas/dingin dan ruang kelistrikan kritis.
+    - Menguji efektivitas pengendalian mikroklimat ruang server (T ≤ 24°C, kebisingan ≤ 85 dB, waktu respons mitigasi t ≤ 60 detik).
+    - Mengevaluasi kenaikan persentase kepatuhan K3 (≥ 90%) dan penurunan indeks risiko FMEA (ΔFMEA ≥ 40%) secara signifikan secara statistik (p < 0.05).
 
 1.4 Manfaat Penelitian
-    - Manfaat Teoretis: Kontribusi metodologis rekayasa fasilitas sipil cerdas dan keselamatan kerja infrastruktur kritis.
-    - Manfaat Praktis: Pedoman implementasi telemetri preventif bagi pengelola data center komersial / industri utilitas kritis.
+    - Manfaat Teoretis: Kontribusi keilmuan pada rekayasa keselamatan fasilitas sipil cerdas (smart critical facility safety) dan pemodelan risiko FMEA kuantitatif.
+    - Manfaat Praktis: Standard Operating Procedure (SOP) dan framework pemantauan K3 telemetri preventif bagi pengelola data center Tier 3 & 4 komersial/utilitas nasional.
 
 1.5 Batasan Masalah
-    - Pengujian in-situ difokuskan pada lorong panas dan lorong dingin (hot/cold aisle) ruang server.
-    - Parameter fisik terukur dibatasi pada suhu (°C), kelembapan relatif (%), kebisingan (dB), dan waktu respons (s).
+    - Pengujian in-situ difokuskan pada lorong panas dan lorong dingin (hot/cold aisle containment), ruang power UPS, dan switchgear fasilitas Data Center Tier 3/4.
+    - Parameter fisik terukur dibatasi pada suhu (°C), kelembapan relatif (% RH), intensitas kebisingan akustik (dB), waktu respons mitigasi (s), kepatuhan K3 (%), dan skor FMEA RPN.
 
 ==================================================
 BAB II: TINJAUAN PUSTAKA
 ==================================================
-2.1 Kajian Pustaka & Analisis Bibliometrik Scopus
+2.1 Kajian Pustaka & Analisis Bibliometrik Scopus (Tugas 1)
     - Pemetaan struktur literatur global menggunakan VOSviewer dan basis data Scopus (Elsevier).
     - Rujukan artikel utama:
       * Paper 1: ${task1.papers[0].authors} (${task1.papers[0].year}). ${task1.papers[0].title}. ${task1.papers[0].journal}.
       * Paper 2: ${task1.papers[1].authors} (${task1.papers[1].year}). ${task1.papers[1].title}. ${task1.papers[1].journal}.
       * Paper 3: ${task1.papers[2].authors} (${task1.papers[2].year}). ${task1.papers[2].title}. ${task1.papers[2].journal}.
 
-2.2 Konsep Dasar K3 dan Manajemen Risiko di Fasilitas Data Center
-    - Standar keselamatan kerja kelistrikan (NFPA 70E, OSHA) dan bahaya busur api (arc-flash).
-    - Manajemen risiko proaktif menggunakan Failure Mode and Effects Analysis (FMEA).
+2.2 Arsitektur dan Standar Fasilitas Data Center Tier 3 & 4
+    - Standar Uptime Institute, TIA-942, redundansi jalur distribusi 2N dan N+1, serta filosofi pemeliharaan konkurent.
 
-2.3 Teknologi Sensor Telemetri & IoT untuk Pemantauan Lingkungan
-    - Jaringan sensor nirkabel (WSN), protokol MQTT/HTTP, dan logging data lingkungan kontinu.
+2.3 Manajemen Risiko K3 dan Failure Mode and Effects Analysis (FMEA)
+    - Analisis potensi bahaya tersembunyi (thermal hotspot, arc-flash, gas suppression accidental discharge).
+    - Perhitungan Risk Priority Number (RPN = Severity x Occurrence x Detection) dan metrik kepatuhan K3 (OSHA 1910, NFPA 70E, ASHRAE TC 9.9).
 
-2.4 Kerangka Berpikir dan Hipotesis Penelitian
-    - Hipotesis: Penerapan pemantauan telemetri real-time memberikan penurunan signifikan pada indeks risiko FMEA (≥ 40%) dan mempercepat mitigasi bahaya secara terukur (p < 0.05).
+2.4 Teknologi Sensor Telemetri & IoT In-Situ
+    - Akuisisi data mikrokontroler industri, sensor termal kalibrasi, sound level transducer, transmisi MQTT/Modbus, dan visualisasi dashboard real-time.
+
+2.5 Kerangka Berpikir dan Hipotesis Penelitian
+    - Hipotesis Utama: Penerapan pemantauan telemetri IoT in-situ terpadu memberikan penurunan signifikan terhadap skor risiko FMEA RPN (ΔRPN ≥ 40%), meningkatkan kepatuhan K3 (≥ 90%), dan mempercepat respons mitigasi bahaya tersembunyi (t ≤ 60 detik) secara valid secara statistik (p < 0.05).
 
 ==================================================
 BAB III: METODOLOGI PENELITIAN
 ==================================================
 3.1 Pendekatan dan Desain Penelitian
-    - Mixed-methods: Studi pendahuluan bibliometrik VOSviewer dipadukan dengan pengujian lapangan in-situ (In-situ Experimental Testing).
+    - Metode Campuran (Mixed-Methods): Studi pendahuluan bibliometrik VOSviewer dipadukan dengan pengujian lapangan in-situ (In-situ Experimental Testing) pada Data Center Tier 3/4.
 
 3.2 Prosedur Penelitian
-    - Tahap 1: Analisis bibliometrik literatur Scopus PRISMA 2020.
-    - Tahap 2: Instalasi dan kalibrasi node sensor telemetri multi-parameter.
-    - Tahap 3: Pengumpulan data baseline (kondisi eksisting konvensional).
-    - Tahap 4: Penerapan sistem telemetri digital real-time & pencatatan waktu respons mitigasi.
-    - Tahap 5: Evaluasi skor risiko FMEA dan uji signifikansi statistik.
+    - Tahap 1: Sintesis literatur Scopus PRISMA 2020 dan pemetaan jejaring VOSviewer.
+    - Tahap 2: Audit baseline bahaya tersembunyi eksisting dan asesmen awal FMEA RPN.
+    - Tahap 3: Perancangan, kalibrasi, dan penempatan node sensor telemetri multi-parameter.
+    - Tahap 4: Implementasi sistem telemetri digital real-time & pencatatan logging data in-situ.
+    - Tahap 5: Evaluasi akhir kepatuhan K3 (%), perhitungan ulang skor FMEA RPN, dan pengujian hipotesis statistik komparatif.
 
 3.3 Variabel Penelitian & Definisi Operasional
     - Variabel Bebas (X): Penerapan sistem pemantauan telemetri multi-parameter K3 berbasis IoT.
     - Variabel Terikat (Y):
-      * Suhu ruang server (T ≤ 24°C)
-      * Tingkat kebisingan akustik (L ≤ 85 dB)
-      * Waktu respons peringatan dini mitigasi (t ≤ 60 detik)
-      * Persentase penurunan skor risiko kecelakaan kerja FMEA (ΔRisk ≥ 40%)
+      * Suhu ruang server (Target: T ≤ 24°C)
+      * Tingkat kebisingan akustik (Target: L ≤ 85 dB)
+      * Waktu respons peringatan dini mitigasi bahaya (Target: t ≤ 60 detik)
+      * Tingkat kepatuhan K3 personel operasional (Target: ≥ 90%)
+      * Persentase penurunan skor FMEA Risk Priority Number (Target: ΔRPN ≥ 40%)
 
 3.4 Instrumen & Peralatan Pengujian
-    - Sensor digital termal-higrometer, sound level meter terkalibrasi, gateway IoT, server telemetri, dan software statistik.
+    - Sensor digital termal-higrometer industri terkalibrasi, precision sound level meter B&K, IoT gateway industri, data logger telemetri, dan software statistik SPSS/R.
 
 3.5 Teknik Analisis Data
-    - Uji normalitas, uji komparatif parametrik/non-parametrik (t-test / Wilcoxon), dengan tingkat signifikansi p < 0.05.
+    - Uji normalitas data (Shapiro-Wilk), uji beda komparatif berpasangan (Paired t-test atau Wilcoxon Signed-Rank Test) dengan tingkat signifikansi p < 0.05.
 
 ==================================================
 BAB IV: HASIL DAN PEMBAHASAN
 ==================================================
 4.1 Hasil Pemetaan Bibliometrik Awal
-    - Visualisasi jejaring topik VOSviewer menunjukkan bahwa integrasi telemetri real-time pada K3 fasilitas misi kritis adalah area kebaruan tinggi.
-4.2 Data Hasil Pengujian In-Situ Lapangan
-    - Profil fluktuasi suhu, kebisingan, dan waktu respons deteksi sebelum dan sesudah telemetri.
-4.3 Analisis dan Pembahasan Komprehensif
-    - Komparasi empiris terhadap standar rujukan dan pembahasan pemenuhan hipotesis penelitian.
+    - Visualisasi jejaring VOSviewer menunjukkan dominasi klaster efisiensi energi PUE dan minimnya integrasi kuantitatif pemantauan telemetri keselamatan kerja teknisi (novelty argumen).
+4.2 Rekaman Data Pengujian In-Situ Lapangan
+    - Data log empiris fluktuasi temperatur hot/cold aisle, profil spektrum kebisingan kipas, dan kecepatan waktu respons otomatis t ≤ 60 detik.
+4.3 Analisis Penurunan Risiko FMEA & Peningkatan Kepatuhan K3
+    - Matriks perbandingan skor Severity, Occurrence, Detection, dan RPN sebelum vs sesudah telemetri (tercapai penurunan ≥ 40%).
+4.4 Uji Validasi dan Signifikansi Statistik
+    - Hasil pengujian komparatif membuktikan pengaruh signifikan sistem telemetri terhadap reduksi risiko bahaya tersembunyi (p < 0.05).
 
 ==================================================
 BAB V: KESIMPULAN DAN SARAN
 ==================================================
 5.1 Kesimpulan
-    - Menjawab secara tuntas seluruh rumusan masalah berdasarkan bukti numerik dan analisis statistik objektif.
-5.2 Saran
-    - Rekomendasi operasional bagi praktisi fasilitas industri serta arah riset lanjutan berbasis AI prediktif.`;
+    - Menjawab tuntas seluruh 7 RQ dengan bukti numerik in-situ: stabilitas suhu ≤ 24°C, kontrol kebisingan ≤ 85 dB, kecepatan respons t ≤ 60 detik, kenaikan kepatuhan K3 ≥ 90%, dan reduksi FMEA RPN ≥ 40% (p < 0.05).
+5.2 Saran & Rekomendasi
+    - Pedoman integrasi Building Management System (BMS) dengan telemetri keselamatan K3 untuk fasilitas hyperscale Tier 3 & 4.`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullOutlineText);

@@ -249,7 +249,7 @@ export function createBenchmarkTask2CivilEngineering(): Task2ResearchDesign {
 }
 
 /**
- * Benchmark Tugas 1: K3 & Pemantauan Telemetri Data Center
+ * Benchmark Tugas 1: K3 & Pemantauan Telemetri Data Center Tier 3 & 4
  * Sesuai kurikulum matakuliah Desain Penelitian / Metopen S2
  * 3 Artikel Bereputasi Scopus Q1: Ham & Hwang (2026), Garimella et al. (2016), Killeen et al. (2023)
  */
@@ -272,20 +272,20 @@ export function createBenchmarkTask1DataCenterK3(): Task1State {
         doi: "10.1016/j.ssci.2025.106540",
         indexingDb: "Scopus Q1 (CiteScore: 9.4, SJR: 1.55)",
         citationCount: 18,
-        topicAndRelevance: "Manajemen risiko K3 fasilitas misi kritis (data center), bahaya busur api listrik (arc-flash), paparan kebisingan terus-menerus, dan pemantauan fluks termal ruang server 24/7.",
-        generalGoalAndGap: "Tujuan: Memetakan struktur intelektual dan regulasi keselamatan kerja pada operasional data center kritis. Gap: Belum terukurnya integrasi pengawasan K3 digital berbasis sensor telemetri secara real-time di lapangan terhadap skor FMEA.",
-        researchQuestions: "1. Bagaimana tren publikasi dan regulasi K3 data center global dalam 2 dekade terakhir (2005–2026)?\n2. Bagaimana arsitektur sistem pemantauan lingkungan memitigasi bahaya kecelakaan kerja dan downtime operasional?",
+        topicAndRelevance: "Manajemen risiko K3 fasilitas misi kritis (Data Center Tier 3 & 4), bahaya tersembunyi busur api listrik (arc-flash), paparan kebisingan akustik terus-menerus, dan pemantauan mikroklimat ruang server 24/7.",
+        generalGoalAndGap: "Tujuan: Memetakan struktur intelektual dan regulasi keselamatan kerja pada operasional data center Tier 3 & 4. Gap: Belum terukurnya integrasi pengawasan K3 digital berbasis sensor telemetri secara real-time di lapangan terhadap persentase kepatuhan K3 dan penurunan skor FMEA.",
+        researchQuestions: "1. Bagaimana tren publikasi dan regulasi K3 data center global dalam 2 dekade terakhir (2005–2026)?\n2. Bagaimana arsitektur sistem pemantauan lingkungan memitigasi bahaya tersembunyi, kecelakaan kerja, dan downtime operasional?",
         isRqReconstructed: true,
         rqReconstructionNotes: "Penulis menyajikan sasaran pada subbab Latar Belakang; diadaptasi menjadi 2 RQ terukur untuk evaluasi bibliometrik.",
         databaseAndSearchDate: "Scopus Elsevier, diakses tanggal 10 Februari 2026.",
         booleanQuery: 'TITLE-ABS-KEY(("data center" OR "critical facility") AND ("occupational safety" OR "risk assessment" OR "FMEA") AND ("environmental monitoring" OR "telemetry")) AND DOCTYPE(ar OR re)',
         yearRange: "2005 – 2026 (21 Tahun)",
-        selectionCriteria: "Inklusi: Artikel jurnal peer-reviewed tentang K3 dan pemantauan fisik fasilitas data center. Eksklusi: Artikel murni algoritma cloud software tanpa kaitan langsung dengan infrastruktur gedung fisik.",
+        selectionCriteria: "Inklusi: Artikel jurnal peer-reviewed tentang K3, keselamatan kerja teknisi, dan pemantauan fisik fasilitas data center misi kritis. Eksklusi: Artikel murni algoritma cloud software tanpa kaitan langsung dengan infrastruktur gedung fisik.",
         toolsAndTechniques: "VOSviewer v1.6.20 (co-occurrence kata kunci K3 dan FMEA, overlay visualization) & Bibliometrix R-package.",
-        mainFindings: "Paparan kebisingan kipas server (>85 dB) dan akumulasi panas (>27°C) merupakan faktor dominan kelelahan teknisi dan kegagalan komponen; integrasi IoT sensor real-time menjadi kebaruan riset paling mendesak.",
-        academicValueAndTouch: "Menghubungkan standar keselamatan kerja internasional (OSHA / NFPA 70E) dengan pemantauan parameter rekayasa fasilitas teknik sipil dan keandalan infrastruktur.",
+        mainFindings: "Paparan kebisingan kipas server (>85 dB), akumulasi panas mikro (hotspot >27°C), dan bahaya kelistrikan merupakan faktor dominan kelelahan teknisi dan kegagalan komponen; integrasi IoT sensor real-time menjadi kebaruan riset paling mendesak untuk meningkatkan kepatuhan K3.",
+        academicValueAndTouch: "Menghubungkan standar keselamatan kerja internasional (OSHA / NFPA 70E) dengan pemantauan parameter rekayasa fasilitas teknik sipil dan keandalan infrastruktur Tier 3 & 4.",
         limitationsAndBias: "Mayoritas literatur yang ada masih bersifat audit kualitatif berkala ketimbang pemantauan telemetri digital kontinu.",
-        futureResearchOpportunities: "Pengembangan sistem telemetri digital real-time dengan threshold peringatan dini (t ≤ 60 detik) dan analisis reliabilitas kuantitatif berbasis sensor in-situ.",
+        futureResearchOpportunities: "Pengembangan sistem telemetri digital real-time dengan threshold peringatan dini (t ≤ 60 detik) dan analisis reliabilitas kuantitatif berbasis penurunan skor FMEA ≥ 40%.",
       },
       {
         id: "paper-2",
@@ -296,7 +296,7 @@ export function createBenchmarkTask1DataCenterK3(): Task1State {
         doi: "10.1109/TCPMT.2016.2603607",
         indexingDb: "Scopus Q1 (CiteScore: 5.6, SJR: 0.88)",
         citationCount: 420,
-        topicAndRelevance: "Pengendalian termal elektronik, manajemen energi pendinginan, pemantauan fluks panas (W/cm²), dan infrastruktur termal ruang server telekomunikasi.",
+        topicAndRelevance: "Pengendalian termal elektronik, manajemen energi pendinginan, pemantauan fluks panas (W/cm²), dan bahaya tersembunyi panas berlebih pada infrastruktur ruang server densitas tinggi.",
         generalGoalAndGap: "Tujuan: Meringkas tantangan pemantauan termal dari skala perangkat mikro hingga skala makro gedung data senter. Gap: Tolok ukur efisiensi energi PUE belum mengintegrasikan parameter keselamatan kerja personel secara simultan.",
         researchQuestions: "1. Apa saja tantangan utama pemantauan fluks termal pada infrastruktur komputasi skala besar?\n2. Bagaimana tren pergeseran teknologi sistem pendingin dari konvensional ke liquid cooling?",
         isRqReconstructed: true,
@@ -320,7 +320,7 @@ export function createBenchmarkTask1DataCenterK3(): Task1State {
         doi: "10.1016/j.apacoust.2023.109241",
         indexingDb: "Scopus Q1 (CiteScore: 6.8, SJR: 1.12)",
         citationCount: 16,
-        topicAndRelevance: "Pengendalian bahaya fisik kebisingan akustik (dB), mitigasi getaran kipas pendingin rak server, dan rekayasa akustik material K3.",
+        topicAndRelevance: "Pengendalian bahaya fisik kebisingan akustik (dB), mitigasi getaran kipas pendingin rak server, dan rekayasa akustik material K3 di ruang server.",
         generalGoalAndGap: "Tujuan: Evaluasi penekanan kebisingan rentang frekuensi rendah pada rak server telekomunikasi menggunakan acoustic metamaterial liner. Gap: Minimnya solusi material peredam yang efisien tanpa mengganggu aliran udara pendingin (airflow).",
         researchQuestions: "1. Seberapa besar penurunan tingkat kebisingan (dB) yang dicapai dengan metamaterial liner pada rak server?\n2. Bagaimana dampaknya terhadap frekuensi suara spesifik kipas pendingin?",
         isRqReconstructed: false,
@@ -341,7 +341,7 @@ export function createBenchmarkTask1DataCenterK3(): Task1State {
 }
 
 /**
- * Benchmark Tugas 2: K3 & Pemantauan Telemetri Data Center (7 RQs & PRISMA)
+ * Benchmark Tugas 2: K3 Data Center Tier 3 & 4 (7 RQs & PRISMA)
  */
 export function createBenchmarkTask2DataCenterK3(): Task2ResearchDesign {
   return {
@@ -352,26 +352,26 @@ export function createBenchmarkTask2DataCenterK3(): Task2ResearchDesign {
       academicYear: "Gasal 2026/2027",
       submissionDate: "12 November 2026",
     },
-    theme: "Manajemen Risiko K3 dan Pemantauan Telemetri Lingkungan Data Center",
-    proposedTitle: "Integrasi Sistem Pemantauan Telemetri Lingkungan dan Mitigasi Risiko K3 Berbasis Sensor Real-Time pada Operasional Fasilitas Data Center",
-    titleNoveltyRationale: "Menggabungkan arsitektur jaringan sensor telemetri IoT (suhu, kelembapan, kebisingan) dengan kerangka manajemen risiko K3 (FMEA) terukur pada fasilitas misi kritis data center.",
-    urgencyAndImportance: "Operasional data center 24/7 menuntut keandalan tinggi dan lingkungan kerja yang aman. Paparan kebisingan akustik kipas (>85 dB) dan akumulasi fluks panas (>27°C) berdampak langsung pada risiko human-error serta kegagalan sistem pendingin.",
-    previousStudiesReview: "Studi terdahulu cenderung memisahkan antara efisiensi termal elektronik (Garimella et al., 2016), peredaman akustik pasif (Killeen et al., 2023), dan audit keselamatan kerja konvensional (Ham & Hwang, 2026). Belum ada platform pemantauan in-situ multi-parameter real-time.",
-    unansweredResearchGap: "Belum terukurnya efektivitas sistem telemetri digital terpadu dalam mempercepat waktu respons mitigasi bahaya (t ≤ 60 detik) dan menurunkan indeks risiko kecelakaan kerja FMEA ≥ 40% secara signifikan secara statistik (p < 0.05).",
-    bibliometricApproachRationale: "Analisis bibliometrik Scopus dan VOSviewer diperlukan untuk memetakan struktur intelektual riset keselamatan data center global dan mengidentifikasi gap teknologi telemetri K3 secara objektif.",
+    theme: "Tingkat Kepatuhan K3 (%) dan Penurunan Risiko FMEA K3 di Lingkungan Data Center Tier 3 & 4 dengan Bahaya Tersembunyi",
+    proposedTitle: "Tingkat Kepatuhan K3 (%) dan Penurunan Risiko FMEA K3 Berbasis Sistem Pemantauan Telemetri IoT pada Lingkungan Data Center Tier 3 & 4 dengan Bahaya Tersembunyi",
+    titleNoveltyRationale: "Fokus spesifik pada mitigasi bahaya tersembunyi (hidden hazards: micro-hotspots rak server, thermal runaway baterai UPS, arc-flash transien, dan kebisingan blower akustik frekuensi rendah) pada arsitektur Data Center Tier 3 & 4 dengan redundansi 2N/N+1, menghubungkan telemetri sensor multi-parameter dengan peningkatan persentase kepatuhan K3 (%) dan reduksi skor FMEA ≥ 40%.",
+    urgencyAndImportance: "Operasional Data Center Tier 3 & 4 beroperasi 24/7/365 dengan tingkat ketersediaan tinggi (99.982%–99.995%) dan beban pemeliharaan bersamaan (concurrently maintainable). Kondisi ini menyimpan bahaya tersembunyi kritis bagi personel teknisi: paparan kebisingan blower pendingin terus menerus (>85 dB), lonjakan fluks termal lokal (>27°C) pada rak berdensitas tinggi, risiko arc-flash pada switchgear listrik, dan akumulasi gas baterai UPS. Audit berkala konvensional terbukti terlambat mendeteksi bahaya tersembunyi sebelum terjadi kegagalan operasional atau kecelakaan kerja fatal.",
+    previousStudiesReview: "Penelitian terdahulu terfragmentasi antara efisiensi pendinginan termal elektronik (Garimella et al., 2016), peredaman kebisingan pasif rak (Killeen et al., 2023), dan audit keselamatan kerja deskriptif (Ham & Hwang, 2026). Belum ada platform pemantauan in-situ real-time multi-parameter yang terhubung langsung dengan evaluasi Failure Mode and Effects Analysis (FMEA) dan indeks kepatuhan K3 teknisi secara simultan.",
+    unansweredResearchGap: "Belum terukurnya efektivitas sistem telemetri digital terpadu dalam mempercepat waktu respons deteksi dini bahaya tersembunyi (t ≤ 60 detik), meningkatkan kepatuhan K3 (≥ 90%), dan menurunkan skor Risk Priority Number (RPN) FMEA ≥ 40% yang tervalidasi secara statistik (p < 0.05) pada fasilitas Data Center Tier 3 & 4.",
+    bibliometricApproachRationale: "Analisis bibliometrik Scopus dan visualisasi VOSviewer diperlukan untuk memetakan struktur intelektual riset keselamatan fasilitas misi kritis global dan membuktikan novelty penelitian ini di tengah dominasi riset efisiensi energi PUE komputasi murni.",
     researchQuestions: [
-      "RQ 1 (Aspek Tren & Pemetaan Literatur): Bagaimana struktur jejaring intelektual dan tren perkembangan riset global mengenai K3 serta pemantauan lingkungan fasilitas data center berdasarkan analisis bibliometrik VOSviewer (2005–2026)?",
-      "RQ 2 (Aspek Baseline / Kondisi Eksisting): Seberapa besar tingkat paparan risiko fisik—meliputi deviasi suhu ruang server (°C), intensitas kebisingan akustik (dB), dan fluks termal (W/m²)—sebelum penerapan sistem telemetri digital?",
-      "RQ 3 (Aspek Integrasi Sistem & Perlakuan): Bagaimana arsitektur rancangan integrasi sensor telemetri multi-parameter berbasis IoT yang efektif untuk memantau kondisi lingkungan kerja dan potensi bahaya fisik secara real-time?",
-      "RQ 4 (Aspek Efektivitas Parameter Fisik): Seberapa besar kemampuan sistem pemantauan telemetri digital dalam menekan paparan suhu ekstrem hingga ambang batas aman (≤ 24°C) dan mengendalikan tingkat kebisingan operasional (≤ 85 dB)?",
-      "RQ 5 (Aspek Kecepatan Respons Mitigasi): Seberapa signifikan percepatan waktu respons dan deteksi dini insiden bahaya (t ≤ 60 detik) yang dicapai melalui otomatisasi peringatan sistem telemetri dibandingkan metode konvensional?",
-      "RQ 6 (Aspek Reduksi Risiko K3 / FMEA): Seberapa besar persentase penurunan indeks tingkat risiko kecelakaan kerja dan skor Failure Mode and Effects Analysis (FMEA) setelah implementasi mitigasi digital (≥ 40% penurunan risiko)?",
-      "RQ 7 (Aspek Validasi & Signifikansi Statistik): Apakah model integrasi pemantauan lingkungan dan mitigasi risiko K3 terpadu ini terbukti valid dan memberikan pengaruh signifikan secara statistik (p < 0.05) terhadap peningkatan keselamatan fasilitas?",
+      "RQ 1 (Aspek Tren & Pemetaan Literatur Global): Bagaimana struktur jejaring intelektual, klaster tematik, dan tren publikasi riset global mengenai manajemen risiko K3 dan pemantauan lingkungan fasilitas data center misi kritis berdasarkan analisis bibliometrik Scopus dan VOSviewer (2005–2026)?",
+      "RQ 2 (Aspek Baseline & Identifikasi Bahaya Tersembunyi Eksisting): Seberapa besar tingkat paparan risiko fisik—meliputi deviasi suhu ruang server (T > 24°C), intensitas kebisingan akustik kipas pendingin (L > 85 dB), dan fluks termal—serta baseline tingkat kepatuhan K3 (%) teknisi pada Data Center Tier 3 & 4 sebelum penerapan telemetri digital?",
+      "RQ 3 (Aspek Arsitektur Integrasi Telemetri IoT): Bagaimana rancangan arsitektur integrasi sistem telemetri lingkungan multi-parameter berbasis sensor IoT dan mikrokontroler industri yang andal untuk memantau bahaya tersembunyi di area kritis (hot/cold aisle, ruang UPS, switchgear listrik) secara real-time?",
+      "RQ 4 (Aspek Efektivitas Pengendalian Parameter Fisik): Seberapa besar efektivitas sistem pemantauan telemetri digital dalam menjaga stabilitas mikroklimat ruang server pada ambang batas aman (T ≤ 24°C, RH 40–60%) dan mengendalikan tingkat kebisingan akustik operasional (L ≤ 85 dB)?",
+      "RQ 5 (Aspek Kecepatan Respons Mitigasi & Deteksi Dini): Seberapa signifikan percepatan waktu respons dan deteksi dini insiden bahaya tersembunyi (t ≤ 60 detik) yang dicapai melalui otomatisasi peringatan sistem telemetri dibandingkan metode inspeksi manual konvensional?",
+      "RQ 6 (Aspek Kepatuhan K3 & Reduksi Risiko FMEA): Seberapa besar persentase peningkatan tingkat kepatuhan K3 (target ≥ 90%) dan persentase penurunan skor Risk Priority Number (RPN) pada Failure Mode and Effects Analysis (ΔFMEA ≥ 40%) setelah penerapan kerangka mitigasi digital?",
+      "RQ 7 (Aspek Validasi & Signifikansi Statistik): Apakah model integrasi pemantauan lingkungan telemetri dan mitigasi K3 terpadu ini terbukti valid dan memberikan pengaruh signifikan secara statistik (p < 0.05) terhadap peningkatan keselamatan kerja dan keandalan operasional Data Center Tier 3 & 4?",
     ],
     targetDatabase: "Scopus",
-    databaseRationale: "Scopus dipilih karena memiliki cakupan komprehensif terhadap jurnal-jurnal bereputasi tinggi di bidang rekayasa keselamatan (Safety Science, Applied Acoustics, IEEE Transactions, Reliability Engineering & System Safety).",
-    booleanSearchString: 'TITLE-ABS-KEY(("data center" OR "data centre" OR "server room") AND ("occupational safety" OR "risk mitigation" OR "thermal management" OR "noise reduction") AND ("telemetry" OR "sensor monitoring")) AND DOCTYPE(ar OR re) AND PUBYEAR > 2004',
-    searchStringOperationalNotes: "Irisan konsep fasilitas misi kritis dengan parameter fisik K3 (termal, kebisingan, keselamatan) serta teknologi pemantauan sensor real-time.",
+    databaseRationale: "Scopus dipilih karena memiliki cakupan komprehensif terhadap jurnal-jurnal bereputasi tinggi Q1 dan Q2 di bidang rekayasa keselamatan fasilitas kritis (Safety Science, Applied Acoustics, IEEE Transactions, Reliability Engineering & System Safety).",
+    booleanSearchString: 'TITLE-ABS-KEY(("data center" OR "data centre" OR "server room" OR "mission critical facility") AND ("occupational safety" OR "risk mitigation" OR "FMEA" OR "thermal management" OR "noise reduction") AND ("telemetry" OR "sensor monitoring" OR "IoT")) AND DOCTYPE(ar OR re) AND PUBYEAR > 2004',
+    searchStringOperationalNotes: "Irisan konsep fasilitas misi kritis dengan parameter fisik K3 (termal, kebisingan, keselamatan listrik) serta teknologi pemantauan sensor telemetri IoT real-time.",
     prisma: {
       recordsIdentified: 628,
       additionalRecords: 12,
@@ -381,18 +381,18 @@ export function createBenchmarkTask2DataCenterK3(): Task2ResearchDesign {
       fullTextAssessed: 164,
       fullTextExcluded: 68,
       studiesIncluded: 96,
-      inclusionCriteriaText: "Artikel jurnal peer-reviewed terindeks Scopus Q1-Q3 tentang operasional fisik data center, pemantauan sensor telemetri, akustik rak server, dan manajemen keselamatan K3.",
+      inclusionCriteriaText: "Artikel jurnal peer-reviewed terindeks Scopus Q1-Q3 tentang operasional fisik data center Tier 3/4, pemantauan sensor telemetri, akustik rak server, bahaya kelistrikan, dan manajemen keselamatan K3/FMEA.",
       exclusionCriteriaText: "Artikel algoritma cloud software non-fisik, prosiding non-peer-reviewed, dan artikel non-bahasa Inggris.",
       languageFilter: "Bahasa Inggris (English)",
       docTypeFilter: "Article (ar) & Review (re)",
       yearRange: "2005 – 2026",
     },
-    vosviewerPlan: "Pemetaan co-occurrence kata kunci (Author & Index Keywords) untuk mengidentifikasi klaster: (1) Thermal management & cooling, (2) Acoustic noise & metamaterials, (3) Risk assessment & FMEA, (4) IoT sensor telemetry.",
-    biblioshinyPlan: "Analisis Thematic Map untuk mengidentifikasi bahwa tema sensor IoT telemetri data center merupakan emerging niche theme yang sangat potensial untuk kontribusi tesis.",
-    expectedOutputs: "Visualisasi jejaring VOSviewer, kurva tren sitasi, matriks sintesis komparasi 13 aspek paper, arsitektur telemetri IoT, dan data empiris penurunan risiko FMEA.",
-    knowledgeMappingContribution: "Menghubungkan sains bibliometrik global dengan implementasi rekayasa fasilitas sipil dan manajemen K3 pada infrastruktur data center misi kritis.",
-    matureVsUnderResearchedThemes: "Tema optimasi energi PUE telah sangat matang, sedangkan integrasi simultan antara pemantauan fisik telemetri real-time dengan metrik keselamatan kerja teknisi masih merupakan under-researched gap.",
-    futureResearchAgenda: "Penyusunan standar operasional prosedur (SOP) berbasis telemetri prediktif AI untuk fasilitas data center skala hyperscale.",
+    vosviewerPlan: "Pemetaan co-occurrence kata kunci (Author & Index Keywords) untuk mengidentifikasi klaster: (1) Thermal management & cooling hotspot, (2) Acoustic noise & metamaterials, (3) Risk assessment & FMEA RPN, (4) IoT sensor telemetry in-situ.",
+    biblioshinyPlan: "Analisis Thematic Map untuk mengidentifikasi bahwa tema sensor IoT telemetri data center Tier 3 & 4 merupakan emerging niche theme yang sangat potensial untuk kontribusi tesis.",
+    expectedOutputs: "Visualisasi jejaring VOSviewer, kurva tren sitasi, matriks sintesis komparasi 13 aspek paper, arsitektur telemetri IoT, dan data empiris penurunan risiko FMEA serta kenaikan kepatuhan K3 (%).",
+    knowledgeMappingContribution: "Menghubungkan sains bibliometrik global dengan implementasi rekayasa fasilitas sipil dan manajemen K3 pada infrastruktur data center misi kritis Tier 3 & 4.",
+    matureVsUnderResearchedThemes: "Tema optimasi energi PUE telah sangat matang, sedangkan integrasi simultan antara pemantauan fisik telemetri real-time dengan metrik keselamatan kerja teknisi (kepatuhan K3 % dan skor FMEA) masih merupakan under-researched gap.",
+    futureResearchAgenda: "Penyusunan standar operasional prosedur (SOP) berbasis telemetri prediktif AI untuk fasilitas data center skala hyperscale Tier 3 & 4.",
     civilEngineeringRelevance: "Relevansi langsung pada rekayasa keandalan fasilitas gedung cerdas (smart building), pengendalian kebisingan akustik, dan mitigasi risiko operasional infrastruktur kritis.",
     sustainableInfrastructureImplication: "Meningkatkan efisiensi pendinginan dan keselamatan operasional data center menuju infrastruktur digital hijau yang berketahanan tinggi.",
     lastUpdated: new Date().toISOString(),
